@@ -1,4 +1,4 @@
-module github.com/RKapadia01/PresidioRedactionProcessor
+module github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor
 
 go 1.23.3
 
