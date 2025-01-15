@@ -1,0 +1,13 @@
+type: presidio_redaction
+
+status:
+  class: processor
+  stability:
+    beta: [traces, logs]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: []
+    emeritus: []
+
+tests:
+  config:
