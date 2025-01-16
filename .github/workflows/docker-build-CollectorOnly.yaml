@@ -30,4 +30,4 @@ jobs:
           file: docker/CollectorOnly.Dockerfile
           platforms: linux/amd64
           push: true  # set to false if you only want to build without pushing
-          tags: ${{ secrets.DOCKER_USERNAME }}/my-collector-image:latest
+          tags: rohankapadia/presidioredactioncollector:${{ github.sha }}
