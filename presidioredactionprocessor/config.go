@@ -3,12 +3,28 @@
 
 package presidioredactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
+import "errors"
+
 type Config struct {
 	AnalyzerEndpoint   string           `mapstructure:"analyzer_endpoint"`
 	AnonymizerEndpoint string           `mapstructure:"anonymizer_endpoint"`
 	AnalyzerConfig     AnalyzerConfig   `mapstructure:"analyzer"`
 	AnonymizerConfig   AnonymizerConfig `mapstructure:"anonymizer,omitempty"`
 	ConcurrencyLimit   int              `mapstructure:"concurrency_limit,omitempty"`
+
+	TraceConditions []string `mapstructure:"trace_conditions,omitempty"`
+	LogConditions   []string `mapstructure:"log_conditions,omitempty"`
+}
+
+func (c *Config) validate() error {
+	if c.AnalyzerEndpoint == "" {
+		return errors.New("analyzer_endpoint is required")
+	}
+	if c.AnonymizerEndpoint == "" {
+		return errors.New("anonymizer_endpoint is required")
+	}
+
+	return nil
 }
 
 type AnalyzerConfig struct {

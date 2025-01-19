@@ -16,6 +16,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 type presidioRedaction struct {
@@ -23,11 +27,41 @@ type presidioRedaction struct {
 	logger             *zap.Logger
 	client             *http.Client
 	concurrencyLimiter chan struct{}
+
+	traceConditions []ottl.Expression[ottlspan.TransformContext]
+	logConditions   []ottl.Expression[ottllog.TransformContext]
 }
 
-func newPresidioRedaction(_ context.Context, cfg *Config, logger *zap.Logger) *presidioRedaction {
-	if cfg.ConcurrencyLimit <= 0 {
-		cfg.ConcurrencyLimit = 1
+func newPresidioRedaction(ctx context.Context, cfg *Config, logger *zap.Logger) *presidioRedaction {
+	//Create a span level parser
+	parser := ottlspan.NewParser()
+	//save the trace conditions into memory
+	traceConditions := make([]ottl.Expression[ottlspan.TransformContext], 0, len(cfg.TraceConditions))
+
+	// Parse trace conditions
+	for _, condition := range cfg.TraceConditions {
+		expr, err := parser.ParseCondition(condition)
+		if err != nil {
+			logger.Error("Error parsing trace condition", zap.Error(err))
+			continue
+		}
+
+		traceConditions = append(traceConditions, expr)
+	}
+
+	// Parse log conditions
+	logParser := ottllog.NewParser()
+	logConditions := make([]ottl.Expression[ottllog.TransformContext], 0, len(cfg.LogConditions))
+
+	for _, condition := range cfg.LogConditions {
+		expr, err := logParser.ParseCondition(condition)
+
+		if err != nil {
+			logger.Error("Error parsing log condition", zap.Error(err))
+			continue
+		}
+
+		logConditions = append(logConditions, expr)
 	}
 
 	return &presidioRedaction{
@@ -35,6 +69,8 @@ func newPresidioRedaction(_ context.Context, cfg *Config, logger *zap.Logger) *p
 		logger:             logger,
 		client:             &http.Client{},
 		concurrencyLimiter: make(chan struct{}, cfg.ConcurrencyLimit),
+		traceConditions:    traceConditions,
+		logConditions:      logConditions,
 	}
 }
 
@@ -68,6 +104,27 @@ func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.Reso
 		for k := 0; k < ils.LogRecords().Len(); k++ {
 			log := ils.LogRecords().At(k)
 
+			// Check if any condition matches
+			shouldProcess := false
+			lCtx := ottllog.NewTransformContext(log, ils, rl)
+
+			for _, condition := range s.logConditions {
+				matches, err := condition.Eval(ctx, lCtx)
+				if err != nil {
+					s.logger.Error("Error evaluating log condition", zap.Error(err))
+					continue
+				}
+				if matches {
+					shouldProcess = true
+					break
+				}
+			}
+
+			// Skip if no conditions match
+			if !shouldProcess && len(s.logConditions) > 0 {
+				continue
+			}
+
 			s.redactAttr(ctx, log.Attributes())
 
 			logBodyStr := log.Body().Str()
@@ -95,6 +152,28 @@ func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.R
 		ils := rs.ScopeSpans().At(j)
 		for k := 0; k < ils.Spans().Len(); k++ {
 			span := ils.Spans().At(k)
+
+			// Check if any condition matches
+			shouldProcess := false
+			tCtx := ottlspan.NewTransformContext(span, ils, rs)
+
+			for _, condition := range s.traceConditions {
+				matches, err := condition.Eval(ctx, tCtx)
+				if err != nil {
+					s.logger.Error("Error evaluating trace condition", zap.Error(err))
+					continue
+				}
+				if matches {
+					shouldProcess = true
+					break
+				}
+			}
+
+			// Skip if no conditions match
+			if !shouldProcess && len(s.traceConditions) > 0 {
+				continue
+			}
+
 			spanAttrs := span.Attributes()
 
 			s.redactAttr(ctx, spanAttrs)
