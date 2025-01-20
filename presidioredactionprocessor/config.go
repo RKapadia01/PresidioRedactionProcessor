@@ -8,7 +8,7 @@ type PresidioServiceConfig struct {
 	DockerAnalyzerEndpoint    string `mapstructure:"docker_analyzer_endpoint"`
 	DockerAnonymizerEndpoint  string `mapstructure:"docker_anonymizer_endpoint"`
 	ConcurrencyLimit          int    `mapstructure:"concurrency_limit,omitempty"`
-	PythonPath 	              string `mapstructure:"python_path"`
+	PythonPath 	              string `mapstructure:"python_path,omitempty"`
 }
 
 type Config struct {
