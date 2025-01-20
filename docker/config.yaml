@@ -11,7 +11,7 @@ processors:
   presidio_redaction:
     analyzer_endpoint: http://host.docker.internal:5002/analyze
     anonymizer_endpoint: http://host.docker.internal:5001/anonymize
-    concurrency_limit: 1 # Default to 1, pending https://github.com/microsoft/presidio/pull/1497
+    concurrency_limit: 1
     analyzer:
       language: "en"
       score_threshold: 0.5
@@ -20,9 +20,9 @@ processors:
         - entity: "DEFAULT"
           type: "REPLACE"
           new_value: "REDACTED"
-    trace_conditions:
+    process_trace_if:
       - 'resource.attributes["service.name"] == "python-tracing-sample" and attributes["contains_pii"] == true'
-    log_conditions:
+    process_log_if:
       - 'resource.attributes["service.name"] == "python-tracing-sample" and severity_text == "INFO"'
 
 exporters:

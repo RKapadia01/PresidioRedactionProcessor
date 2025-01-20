@@ -12,8 +12,8 @@ type Config struct {
 	AnonymizerConfig   AnonymizerConfig `mapstructure:"anonymizer,omitempty"`
 	ConcurrencyLimit   int              `mapstructure:"concurrency_limit,omitempty"`
 
-	TraceConditions []string `mapstructure:"trace_conditions,omitempty"`
-	LogConditions   []string `mapstructure:"log_conditions,omitempty"`
+	TraceConditions []string `mapstructure:"process_trace_if,omitempty"`
+	LogConditions   []string `mapstructure:"process_log_if,omitempty"`
 }
 
 func (c *Config) validate() error {
