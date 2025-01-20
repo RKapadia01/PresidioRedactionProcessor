@@ -22,7 +22,7 @@ func NewFactory() processor.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
-		// processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 
@@ -38,7 +38,7 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	presidioRedaction := newPresidioRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
+	presidioRedaction := newPresidioTraceRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
 	return processorhelper.NewTraces(
 		ctx,
@@ -49,21 +49,21 @@ func createTracesProcessor(
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-// func createLogsProcessor(
-// 	ctx context.Context,
-// 	set processor.Settings,
-// 	cfg component.Config,
-// 	next consumer.Logs,
-// ) (processor.Logs, error) {
-// 	oCfg := cfg.(*Config)
+func createLogsProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	next consumer.Logs,
+) (processor.Logs, error) {
+	oCfg := cfg.(*Config)
 
-// 	presidioRedaction := newPresidioRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
+	presidioRedaction := newPresidioLogRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
-// 	return processorhelper.NewLogs(
-// 		ctx,
-// 		set,
-// 		cfg,
-// 		next,
-// 		presidioRedaction.processLogs,
-// 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
-// }
+	return processorhelper.NewLogs(
+		ctx,
+		set,
+		cfg,
+		next,
+		presidioRedaction.processLogs,
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+}

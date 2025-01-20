@@ -22,11 +22,8 @@ processors:
           new_value: "REDACTED"
     trace_conditions:
       - 'resource.attributes["service.name"] == "python-tracing-sample" and attributes["contains_pii"] == true'
-    # trace_conditions:
-    # Only process spans from the user-service
-    # - 'resource.attributes["service.name"] == "python-tracing-sample"'
-    # # And only if they have certain attributes
-    # - 'attributes["contains_pii"] == true'
+    log_conditions:
+      - 'resource.attributes["service.name"] == "python-tracing-sample" and severity_text == "INFO"'
 
 exporters:
   debug:
@@ -40,5 +37,5 @@ service:
       exporters: [debug]
     logs:
       receivers: [otlp]
-      processors: []
+      processors: [presidio_redaction]
       exporters: [debug]
