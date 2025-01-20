@@ -12,14 +12,15 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 type presidioRedaction struct {
@@ -27,42 +28,52 @@ type presidioRedaction struct {
 	logger             *zap.Logger
 	client             *http.Client
 	concurrencyLimiter chan struct{}
-
-	traceConditions []ottl.Expression[ottlspan.TransformContext]
-	logConditions   []ottl.Expression[ottllog.TransformContext]
+	traceConditions    []ottl.Condition[ottlspan.TransformContext]
+	logConditions      []ottl.Condition[ottllog.TransformContext]
 }
 
-func newPresidioRedaction(ctx context.Context, cfg *Config, logger *zap.Logger) *presidioRedaction {
+func newPresidioRedaction(ctx context.Context, cfg *Config, settings component.TelemetrySettings, logger *zap.Logger) *presidioRedaction {
 	//Create a span level parser
-	parser := ottlspan.NewParser()
+	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings)
+	if err != nil {
+		logger.Error("Error creating span parser", zap.Error(err))
+		return nil
+	}
+
 	//save the trace conditions into memory
-	traceConditions := make([]ottl.Expression[ottlspan.TransformContext], 0, len(cfg.TraceConditions))
+	traceConditions := make([]ottl.Condition[ottlspan.TransformContext], 0, len(cfg.TraceConditions))
 
 	// Parse trace conditions
 	for _, condition := range cfg.TraceConditions {
 		expr, err := parser.ParseCondition(condition)
+
 		if err != nil {
 			logger.Error("Error parsing trace condition", zap.Error(err))
 			continue
 		}
 
-		traceConditions = append(traceConditions, expr)
+		traceConditions = append(traceConditions, *expr)
 	}
 
 	// Parse log conditions
-	logParser := ottllog.NewParser()
-	logConditions := make([]ottl.Expression[ottllog.TransformContext], 0, len(cfg.LogConditions))
+	// logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
+	// if err != nil {
+	// 	logger.Error("Error creating log parser", zap.Error(err))
+	// 	return nil
+	// }
 
-	for _, condition := range cfg.LogConditions {
-		expr, err := logParser.ParseCondition(condition)
+	// logConditions := make([]*ottl.Condition[ottllog.TransformContext], 0, len(cfg.TraceConditions))
 
-		if err != nil {
-			logger.Error("Error parsing log condition", zap.Error(err))
-			continue
-		}
+	// for _, condition := range cfg.LogConditions {
+	// 	expr, err := logParser.ParseCondition(condition)
 
-		logConditions = append(logConditions, expr)
-	}
+	// 	if err != nil {
+	// 		logger.Error("Error parsing log condition", zap.Error(err))
+	// 		continue
+	// 	}
+
+	// 	logConditions = append(logConditions, expr)
+	// }
 
 	return &presidioRedaction{
 		config:             cfg,
@@ -70,7 +81,6 @@ func newPresidioRedaction(ctx context.Context, cfg *Config, logger *zap.Logger) 
 		client:             &http.Client{},
 		concurrencyLimiter: make(chan struct{}, cfg.ConcurrencyLimit),
 		traceConditions:    traceConditions,
-		logConditions:      logConditions,
 	}
 }
 
@@ -89,60 +99,60 @@ func (s *presidioRedaction) processTraces(ctx context.Context, batch ptrace.Trac
 	return batch, nil
 }
 
-func (s *presidioRedaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		rl := logs.ResourceLogs().At(i)
-		s.processResourceLog(ctx, rl)
-	}
+// func (s *presidioRedaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
+// 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+// 		rl := logs.ResourceLogs().At(i)
+// 		s.processResourceLog(ctx, rl)
+// 	}
 
-	return logs, nil
-}
+// 	return logs, nil
+// }
 
-func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) {
-	for j := 0; j < rl.ScopeLogs().Len(); j++ {
-		ils := rl.ScopeLogs().At(j)
-		for k := 0; k < ils.LogRecords().Len(); k++ {
-			log := ils.LogRecords().At(k)
+// func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) {
+// 	for j := 0; j < rl.ScopeLogs().Len(); j++ {
+// 		ils := rl.ScopeLogs().At(j)
+// 		for k := 0; k < ils.LogRecords().Len(); k++ {
+// 			log := ils.LogRecords().At(k)
 
-			// Check if any condition matches
-			shouldProcess := false
-			lCtx := ottllog.NewTransformContext(log, ils, rl)
+// 			// Check if any condition matches
+// 			shouldProcess := false
+// 			lCtx := ottllog.NewTransformContext(log, ils, rl)
 
-			for _, condition := range s.logConditions {
-				matches, err := condition.Eval(ctx, lCtx)
-				if err != nil {
-					s.logger.Error("Error evaluating log condition", zap.Error(err))
-					continue
-				}
-				if matches {
-					shouldProcess = true
-					break
-				}
-			}
+// 			for _, condition := range s.logConditions {
+// 				matches, err := condition.Eval(ctx, lCtx)
+// 				if err != nil {
+// 					s.logger.Error("Error evaluating log condition", zap.Error(err))
+// 					continue
+// 				}
+// 				if matches {
+// 					shouldProcess = true
+// 					break
+// 				}
+// 			}
 
-			// Skip if no conditions match
-			if !shouldProcess && len(s.logConditions) > 0 {
-				continue
-			}
+// 			// Skip if no conditions match
+// 			if !shouldProcess && len(s.logConditions) > 0 {
+// 				continue
+// 			}
 
-			s.redactAttr(ctx, log.Attributes())
+// 			s.redactAttr(ctx, log.Attributes())
 
-			logBodyStr := log.Body().Str()
+// 			logBodyStr := log.Body().Str()
 
-			if len(logBodyStr) == 0 {
-				continue
-			}
+// 			if len(logBodyStr) == 0 {
+// 				continue
+// 			}
 
-			redactedBody, err := s.getRedactedValue(ctx, logBodyStr)
-			if err != nil {
-				s.logger.Error("Error calling presidio service", zap.Error(err))
-				continue
-			}
+// 			redactedBody, err := s.getRedactedValue(ctx, logBodyStr)
+// 			if err != nil {
+// 				s.logger.Error("Error calling presidio service", zap.Error(err))
+// 				continue
+// 			}
 
-			log.Body().SetStr(redactedBody)
-		}
-	}
-}
+// 			log.Body().SetStr(redactedBody)
+// 		}
+// 	}
+// }
 
 func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
 	rsAttrs := rs.Resource().Attributes()
@@ -155,7 +165,14 @@ func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.R
 
 			// Check if any condition matches
 			shouldProcess := false
-			tCtx := ottlspan.NewTransformContext(span, ils, rs)
+			// tCtx := ottlspan.NewTransformContext(span, ils, rs)
+			tCtx := ottlspan.NewTransformContext(
+				span,
+				ils.Scope(),   // Get scope
+				rs.Resource(), // Get resource
+				ils,
+				rs,
+			)
 
 			for _, condition := range s.traceConditions {
 				matches, err := condition.Eval(ctx, tCtx)
@@ -170,7 +187,7 @@ func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.R
 			}
 
 			// Skip if no conditions match
-			if !shouldProcess && len(s.traceConditions) > 0 {
+			if len(s.traceConditions) > 0 && !shouldProcess {
 				continue
 			}
 
