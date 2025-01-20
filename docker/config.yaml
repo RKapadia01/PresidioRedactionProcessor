@@ -1,1 +1,41 @@
-# Please replace this with your own configuration file
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Refer to configurations/schema.yaml for configuration options
+  presidio_redaction:
+    analyzer_endpoint: http://host.docker.internal:5002/analyze
+    anonymizer_endpoint: http://host.docker.internal:5001/anonymize
+    concurrency_limit: 1 # Default to 1, pending https://github.com/microsoft/presidio/pull/1497
+    analyzer:
+      language: "en"
+      score_threshold: 0.5
+    anonymizer:
+      anonymizers:
+        - entity: "DEFAULT"
+          type: "REPLACE"
+          new_value: "REDACTED"
+    trace_conditions:
+      - 'resource.attributes["service.name"] == "python-tracing-sample" and attributes["contains_pii"] == true'
+    log_conditions:
+      - 'resource.attributes["service.name"] == "python-tracing-sample" and severity_text == "INFO"'
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [presidio_redaction]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [presidio_redaction]
+      exporters: [debug]
