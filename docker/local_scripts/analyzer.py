@@ -1,20 +1,19 @@
 import sys
 import json
 from presidio_analyzer import AnalyzerEngine
-from presidio_anonymizer import AnonymizerEngine
 
 def main():
     input_data = sys.stdin.read()
 
     try:
-        analyzer_params = json.loads(input_data)
+        analyzer_inputs = json.loads(input_data)
         analyzer = AnalyzerEngine()
-        results = analyzer.analyze(**analyzer_params)
+        analyzer_results = analyzer.analyze(**analyzer_inputs)
 
         # Create the response array
         response = []
-        for res in results:
-            response.append(res.to_dict())
+        for analyzer_result in analyzer_results:
+            response.append(analyzer_result.to_dict())
 
         print(json.dumps(response))
     except json.JSONDecodeError as e:
