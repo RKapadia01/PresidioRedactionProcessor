@@ -3,12 +3,18 @@
 
 package presidioredactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
+type PresidioServiceConfig struct {
+	UseDocker 	              bool   `mapstructure:"use_docker"`
+	DockerAnalyzerEndpoint    string `mapstructure:"docker_analyzer_endpoint"`
+	DockerAnonymizerEndpoint  string `mapstructure:"docker_anonymizer_endpoint"`
+	ConcurrencyLimit          int    `mapstructure:"concurrency_limit,omitempty"`
+	PythonPath 	              string `mapstructure:"python_path"`
+}
+
 type Config struct {
-	AnalyzerEndpoint   string           `mapstructure:"analyzer_endpoint"`
-	AnonymizerEndpoint string           `mapstructure:"anonymizer_endpoint"`
-	AnalyzerConfig     AnalyzerConfig   `mapstructure:"analyzer"`
-	AnonymizerConfig   AnonymizerConfig `mapstructure:"anonymizer,omitempty"`
-	ConcurrencyLimit   int              `mapstructure:"concurrency_limit,omitempty"`
+	PresidioServiceConfig PresidioServiceConfig `mapstructure:"presidio_service"`
+	AnalyzerConfig        AnalyzerConfig   	    `mapstructure:"analyzer"`
+	AnonymizerConfig      AnonymizerConfig 	    `mapstructure:"anonymizer,omitempty"`
 }
 
 type AnalyzerConfig struct {

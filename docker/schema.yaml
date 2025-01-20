@@ -1,0 +1,147 @@
+type: object
+properties:
+  processors:
+    type: object
+    properties:
+      presidio_redaction:
+        type: object
+        properties:
+          presidio_service:
+            type: object
+            properties:
+              use_docker:
+                type: boolean
+                description: Flag to determine if Docker container should be used for the analyzer.
+              docker_analyzer_endpoint:
+                type: string
+                description: URL of the Presidio Analyzer service, responsible for detecting PII entities.
+              docker_anonymizer_endpoint:
+                type: string
+                description: URL of the Presidio Anonymizer service, responsible for transforming detected PII.
+              concurrency_limit:
+                type: integer
+                description: |
+                  Maximum number of concurrent requests to the analyzer and anonymizer.
+                  Default is 1. Increase cautiously based on system performance and stability.
+              python_path:
+                type: string
+                description: Path to the Python executable for the analyzer.
+          analyzer:
+            type: object
+            properties:
+              language:
+                type: string
+                description: "Language code for text analysis. Supported values: en, es, etc."
+              score_threshold:
+                type: number
+                description: |
+                  Confidence score threshold to consider an entity as PII.
+                  Entities with scores below this value will be ignored. Range: 0.0–1.0.
+              entities:
+                type: string
+                description: |
+                  List of entities to detect. Use "DEFAULT" to detect all supported entities.
+                  Full list of Supported Entities: https://microsoft.github.io/presidio/supported_entities/
+              context:
+                type: array
+                items:
+                  type: string
+                description: |
+                  List of context words which may help to raise recognized entities confidence
+          anonymizer:
+            type: object
+            properties:
+              anonymizers:
+                type: array
+                description: List of anonymizer configurations to be applied to detected PII entities.
+                items:
+                  type: object
+                  properties:
+                    entity:
+                      type: string
+                      description: |
+                        Entity type for which this anonymizer is applied. Examples:
+                        - "PHONE_NUMBER", "EMAIL_ADDRESS", "CREDIT_CARD", "LOCATION", etc.
+                        - Full list of Supported Entities: https://microsoft.github.io/presidio/supported_entities/
+                        Use "DEFAULT" to define a fallback for entities not explicitly listed.
+                    type:
+                      type: string
+                      enum:
+                        - REPLACE
+                        - HASH
+                        - REDACT
+                        - MASK
+                        - ENCRYPT
+                      description: |
+                        Anonymization method. Supported types:
+                        - REPLACE: Replace detected entity with a specific value.
+                        - HASH: Replace detected entity with a hashed version.
+                        - REDACT: Remove the detected entity from the text.
+                        - MASK: Mask parts of the detected entity.
+                        - ENCRYPT: Replace detected entity with an encrypted version.
+                    new_value:
+                      type: string
+                      description: Replacement value (required for REPLACE type).
+                    chars_to_mask:
+                      type: array
+                      items:
+                        type: integer
+                      description: |
+                        (For MASK type) List of character positions to mask in the detected entity.
+                        Example: [0, 3] masks the 1st and 4th characters.
+                    masking_char:
+                      type: string
+                      description: |
+                        (For MASK type) Character to use for masking. Default is "*".
+                    from_end:
+                      type: boolean
+                      description: |
+                        (For MASK type) Mask characters from the end of the entity.
+                        Default is false (mask from the beginning).
+                    hash_type:
+                      type: string
+                      description: |
+                        (For HASH type) Specify the hash algorithm (supported algorithms: sha256, sha512, "md5).
+                    key:
+                      type: string
+                      description: |
+                        (For ENCRYPT type) Encryption key for secure transformations.
+                  required:
+                    - entity
+                    - type
+                  oneOf:
+                    - properties:
+                        type:
+                          const: REPLACE
+                        new_value:
+                          type: string
+                          description: Replacement value for REPLACE type.
+                      required: [new_value]
+                    - properties:
+                        type:
+                          const: HASH
+                        hash_algorithm:
+                          type: string
+                          description: Hash algorithm for HASH type.
+                      required: [hash_algorithm]
+                    - properties:
+                        type:
+                          const: MASK
+                        chars_to_mask:
+                          type: array
+                          items:
+                            type: integer
+                          description: Positions of characters to mask.
+                        masking_char:
+                          type: string
+                          description: Character used for masking.
+                      required: [chars_to_mask]
+                    - properties:
+                        type:
+                          const: ENCRYPT
+                        encryption_key:
+                          type: string
+                          description: Encryption key for ENCRYPT type.
+                      required: [encryption_key]
+required:
+  - processors
