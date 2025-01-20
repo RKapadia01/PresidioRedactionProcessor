@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"os/exec"
+	"path/filepath"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,15 +28,15 @@ type presidioRedaction struct {
 }
 
 func newPresidioRedaction(_ context.Context, cfg *Config, logger *zap.Logger) *presidioRedaction {
-	if cfg.ConcurrencyLimit <= 0 {
-		cfg.ConcurrencyLimit = 1
+	if cfg.PresidioServiceConfig.ConcurrencyLimit <= 0 {
+		cfg.PresidioServiceConfig.ConcurrencyLimit = 1
 	}
 
 	return &presidioRedaction{
 		config:             cfg,
 		logger:             logger,
 		client:             &http.Client{},
-		concurrencyLimiter: make(chan struct{}, cfg.ConcurrencyLimit),
+		concurrencyLimiter: make(chan struct{}, cfg.PresidioServiceConfig.ConcurrencyLimit),
 	}
 }
 
@@ -152,25 +154,11 @@ func (s *presidioRedaction) callPresidioAnalyzer(ctx context.Context, value stri
 		return []PresidioAnalyzerResponse{}, fmt.Errorf("failed to marshal request payload: %v", err)
 	}
 
-	headers := map[string]string{
-		"Content-Type": "application/json",
+	if s.config.PresidioServiceConfig.UseDocker {
+		return s.callPresidioAnalyzerDocker(ctx, jsonPayload)
+	} else {
+		return s.callPresidioAnalyzerLocal(ctx, jsonPayload)
 	}
-
-	url := s.config.AnalyzerEndpoint
-
-	resp, err := s.sendHTTPRequest(ctx, http.MethodPost, url, jsonPayload, headers)
-	if err != nil {
-		return []PresidioAnalyzerResponse{}, err
-	}
-	defer resp.Body.Close()
-
-	var presidioAnalyzerResponse []PresidioAnalyzerResponse
-	err = json.NewDecoder(resp.Body).Decode(&presidioAnalyzerResponse)
-	if err != nil {
-		return []PresidioAnalyzerResponse{}, err
-	}
-
-	return presidioAnalyzerResponse, nil
 }
 
 func (s *presidioRedaction) callPresidioAnonymizer(ctx context.Context, value string, analyzerResults []PresidioAnalyzerResponse) (PresidioAnonymizerResponse, error) {
@@ -198,11 +186,65 @@ func (s *presidioRedaction) callPresidioAnonymizer(ctx context.Context, value st
 		return PresidioAnonymizerResponse{}, fmt.Errorf("failed to marshal request payload: %v", err)
 	}
 
+	if s.config.PresidioServiceConfig.UseDocker {
+		return s.callPresidioAnonymizerDocker(ctx, jsonPayload)
+	} else {
+		return s.callPresidioAnonymizerLocal(ctx, jsonPayload)
+	}
+
+	return PresidioAnonymizerResponse{}, fmt.Errorf("local anonymizer is not supported")
+}
+
+func (s *presidioRedaction) callPresidioAnalyzerDocker(ctx context.Context, jsonPayload []byte) ([]PresidioAnalyzerResponse, error) {
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+	url := s.config.PresidioServiceConfig.DockerAnalyzerEndpoint
+	resp, err := s.sendHTTPRequest(ctx, http.MethodPost, url, jsonPayload, headers)
+	if err != nil {
+		return []PresidioAnalyzerResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	var presidioAnalyzerResponse []PresidioAnalyzerResponse
+	err = json.NewDecoder(resp.Body).Decode(&presidioAnalyzerResponse)
+	if err != nil {
+		return []PresidioAnalyzerResponse{}, err
+	}
+
+	return presidioAnalyzerResponse, nil
+}
+
+func (s *presidioRedaction) callPresidioAnalyzerLocal(ctx context.Context, jsonPayload []byte) ([]PresidioAnalyzerResponse, error) {
+	path := filepath.Join(s.config.PresidioServiceConfig.PythonPath, "analyzer.py")
+	if _, err := os.Stat(path); os.IsNotExist(err) { 
+		return []PresidioAnalyzerResponse{}, fmt.Errorf("analyzer script not found at path: %s", path)
+	}
+	cmd := exec.Command("python", path)
+	cmd.Stdin = bytes.NewReader(jsonPayload)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		return []PresidioAnalyzerResponse{}, fmt.Errorf("failed to execute command: %v", err)
+	}
+
+	var presidioAnalyzerResponse []PresidioAnalyzerResponse
+	err = json.NewDecoder(&out).Decode(&presidioAnalyzerResponse)
+	if err != nil {
+		return []PresidioAnalyzerResponse{}, err
+	}
+
+	return presidioAnalyzerResponse, nil
+}
+
+func (s *presidioRedaction) callPresidioAnonymizerDocker(ctx context.Context, jsonPayload []byte) (PresidioAnonymizerResponse, error) {
 	headers := map[string]string{
 		"Content-Type": "application/json",
 	}
 
-	url := s.config.AnonymizerEndpoint
+	url := s.config.PresidioServiceConfig.DockerAnonymizerEndpoint
 	resp, err := s.sendHTTPRequest(ctx, http.MethodPost, url, jsonPayload, headers)
 	if err != nil {
 		return PresidioAnonymizerResponse{}, err
@@ -211,6 +253,30 @@ func (s *presidioRedaction) callPresidioAnonymizer(ctx context.Context, value st
 
 	var presidioAnonymizerResponse PresidioAnonymizerResponse
 	err = json.NewDecoder(resp.Body).Decode(&presidioAnonymizerResponse)
+	if err != nil {
+		return PresidioAnonymizerResponse{}, err
+	}
+
+	return presidioAnonymizerResponse, nil
+}
+
+func (s *presidioRedaction) callPresidioAnonymizerLocal(ctx context.Context, jsonPayload []byte) (PresidioAnonymizerResponse, error) {
+	path := filepath.Join(s.config.PresidioServiceConfig.PythonPath, "anonymizer.py")
+	if _, err := os.Stat(path); os.IsNotExist(err) { 
+		return []PresidioAnalyzerResponse{}, fmt.Errorf("anonymizer script not found at path: %s", path)
+	}
+	cmd := exec.Command("python", path)
+	cmd.Stdin = bytes.NewReader(jsonPayload)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		return PresidioAnonymizerResponse{}, fmt.Errorf("failed to execute command: %v", err)
+	}
+
+	var presidioAnonymizerResponse PresidioAnonymizerResponse
+	err = json.NewDecoder(&out).Decode(&presidioAnonymizerResponse)
 	if err != nil {
 		return PresidioAnonymizerResponse{}, err
 	}
