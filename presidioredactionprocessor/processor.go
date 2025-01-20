@@ -216,8 +216,11 @@ func (s *presidioRedaction) callPresidioAnalyzerDocker(ctx context.Context, json
 }
 
 func (s *presidioRedaction) callPresidioAnalyzerLocal(ctx context.Context, jsonPayload []byte) ([]PresidioAnalyzerResponse, error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) { return []PresidioAnalyzerResponse{}, fmt.Errorf("analyzer script not found at path: %s", path) }
-	cmd := exec.Command(path)
+	path := filepath.Join(s.config.PresidioServiceConfig.PythonPath, "analyzer.py")
+	if _, err := os.Stat(path); os.IsNotExist(err) { 
+		return []PresidioAnalyzerResponse{}, fmt.Errorf("analyzer script not found at path: %s", path)
+	}
+	cmd := exec.Command("python", path)
 	cmd.Stdin = bytes.NewReader(jsonPayload)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -259,7 +262,10 @@ func (s *presidioRedaction) callPresidioAnonymizerDocker(ctx context.Context, js
 
 func (s *presidioRedaction) callPresidioAnonymizerLocal(ctx context.Context, jsonPayload []byte) (PresidioAnonymizerResponse, error) {
 	path := filepath.Join(s.config.PresidioServiceConfig.PythonPath, "anonymizer.py")
-	cmd := exec.Command(path)
+	if _, err := os.Stat(path); os.IsNotExist(err) { 
+		return []PresidioAnalyzerResponse{}, fmt.Errorf("anonymizer script not found at path: %s", path)
+	}
+	cmd := exec.Command("python", path)
 	cmd.Stdin = bytes.NewReader(jsonPayload)
 	var out bytes.Buffer
 	cmd.Stdout = &out
