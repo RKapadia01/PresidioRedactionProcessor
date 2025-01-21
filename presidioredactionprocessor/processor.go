@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -263,7 +264,7 @@ func (s *presidioRedaction) callPresidioAnonymizerDocker(ctx context.Context, js
 func (s *presidioRedaction) callPresidioAnonymizerLocal(ctx context.Context, jsonPayload []byte) (PresidioAnonymizerResponse, error) {
 	path := filepath.Join(s.config.PresidioServiceConfig.PythonPath, "anonymizer.py")
 	if _, err := os.Stat(path); os.IsNotExist(err) { 
-		return []PresidioAnalyzerResponse{}, fmt.Errorf("anonymizer script not found at path: %s", path)
+		return PresidioAnonymizerResponse{}, fmt.Errorf("anonymizer script not found at path: %s", path)
 	}
 	cmd := exec.Command("python", path)
 	cmd.Stdin = bytes.NewReader(jsonPayload)

@@ -9,6 +9,9 @@ RUN curl --proto '=https' --tlsv1.2 -fL -o ocb \
   https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fbuilder%2Fv0.117.0/ocb_0.117.0_linux_amd64 && \
   chmod +x ocb
 
+ENV GO111MODULE=on
+ENV GOMAXPROCS=4
+
 RUN ./ocb --verbose --config builder-config.yaml
 
 FROM debian:stable-slim
