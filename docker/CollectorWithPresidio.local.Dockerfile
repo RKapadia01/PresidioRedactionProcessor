@@ -2,7 +2,7 @@ FROM golang AS builder
 
 WORKDIR /app
 
-COPY ./docker/builder-config.yaml builder-config.yaml
+COPY ./docker/builder-config.local.yaml builder-config.yaml
 COPY ./presidioredactionprocessor ./presidioredactionprocessor
 
 RUN curl --proto '=https' --tlsv1.2 -fL -o ocb \
@@ -11,11 +11,17 @@ RUN curl --proto '=https' --tlsv1.2 -fL -o ocb \
 
 RUN ./ocb --verbose --config builder-config.yaml
 
-FROM debian:stable-slim
+FROM python:3.12-slim
 WORKDIR /app
+
+RUN pip install presidio_analyzer && \
+    pip install presidio_anonymizer && \
+    python -m spacy download en_core_web_lg
 
 COPY --from=builder /app/_build/otelcol-presidio ./otel-collector
 COPY ./docker/config.yaml .
+
+COPY ./local_scripts/* /
 
 EXPOSE 4317 4318
 
