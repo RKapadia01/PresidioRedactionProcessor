@@ -21,7 +21,7 @@ RUN pip install presidio_analyzer && \
 COPY --from=builder /app/_build/otelcol-presidio ./otel-collector
 COPY ./docker/config.yaml .
 
-COPY ./local_scripts/* /
+COPY ./docker/local_scripts/* /
 
 EXPOSE 4317 4318
 
