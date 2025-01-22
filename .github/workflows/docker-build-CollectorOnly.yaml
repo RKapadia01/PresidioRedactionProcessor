@@ -2,18 +2,23 @@ name: Build and Push Docker Image
 
 on:
   push:
+<<<<<<< Updated upstream
     branches: [ "main" ]
+=======
+    branches: ["main"]
+  pull_request:
+>>>>>>> Stashed changes
 
 jobs:
   build-and-push-docker:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
       # Log into Docker Hub (remove this step if you do NOT want to push)
-      - name: Log in to Docker Hub
+      - name: Log in to Docker Hubs
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -28,7 +33,7 @@ jobs:
           # Specify the path to your Dockerfile relative to the repository root
           file: docker/CollectorOnly.Dockerfile
           platforms: linux/amd64
-          push: true  # set to false if you only want to build without pushing
-          tags:
-            - rohankapadia/presidioredactioncollector:latest
-            - rohankapadia/presidioredactioncollector:${{ github.sha }}
+          push: true # set to false if you only want to build without pushing
+          tags: |
+            rohankapadia/presidioredactioncollector:latest
+            rohankapadia/presidioredactioncollector:${{ github.sha }}
