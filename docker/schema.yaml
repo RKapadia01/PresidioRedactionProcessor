@@ -9,23 +9,21 @@ properties:
           presidio_service:
             type: object
             properties:
-              use_docker:
-                type: boolean
-                description: Flag to determine if Docker container should be used for the analyzer.
-              docker_analyzer_endpoint:
+              analyzer_endpoint:
                 type: string
-                description: URL of the Presidio Analyzer service, responsible for detecting PII entities.
-              docker_anonymizer_endpoint:
+                description: |
+                  URL of the Presidio Analyzer service, responsible for detecting PII entities.
+                  http(s) will use HTTP, and grpc will use gRPC.
+              anonymizer_endpoint:
                 type: string
-                description: URL of the Presidio Anonymizer service, responsible for transforming detected PII.
+                description: |
+                  URL of the Presidio Anonymizer service, responsible for transforming detected PII.
+                  http(s) will use HTTP, and grpc will use gRPC.
               concurrency_limit:
                 type: integer
                 description: |
                   Maximum number of concurrent requests to the analyzer and anonymizer.
                   Default is 1. Increase cautiously based on system performance and stability.
-              python_path:
-                type: string
-                description: Path to the Python executable for the analyzer.
           analyzer:
             type: object
             properties:

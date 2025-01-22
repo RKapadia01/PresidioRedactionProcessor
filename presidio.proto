@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+option go_package = "github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor";
+
+service PresidioRedactionProcessor {
+  rpc Analyze(PresidioAnalyzerRequest) returns (PresidioAnalyzerResponses) {}
+  rpc Anonymize(PresidioAnonymizerRequest) returns (PresidioAnonymizerResponse) {}
+  rpc AnalyzeAndAnonymize(PresidioAnalyzerRequest) returns (PresidioAnonymizerResponse) {}
+}
+
+// Represents a request to analyze text for PII entities.
+message PresidioAnalyzerRequest {
+  string text = 1;
+  string language = 2;
+  double score_threshold = 3;
+  repeated string entities = 4;
+  repeated string context = 5;
+}
+
+// Represents the outcome of an analysis operation.
+message PresidioAnalyzerResponses {
+  repeated PresidioAnalyzerResponse analyzer_results = 1;
+}
+
+// Represents the individual outcome of an analysis operation.
+message PresidioAnalyzerResponse {
+  int32 start = 1;
+  int32 end = 2;
+  double score = 3;
+  string entity_type = 4;
+}
+
+// Represents a request to anonymize text.
+message PresidioAnonymizerRequest {
+  string text = 1;
+  map<string, PresidioAnonymizer> anonymizers = 2;
+  repeated PresidioAnalyzerResponse analyzer_results = 3;
+}
+
+// Defines the configuration of a particular anonymizer.
+message PresidioAnonymizer {
+  string type = 1;
+  string new_value = 2;
+  string masking_char = 3;
+  int32 chars_to_mask = 4;
+  bool from_end = 5;
+  string hash_type = 6;
+  string key = 7;
+}
+
+// Represents the outcome of an anonymization operation.
+message PresidioAnonymizerResponse {
+  string operation = 1;
+  string entity_type = 2;
+  int32 start = 3;
+  int32 end = 4;
+  string text = 5;
+}

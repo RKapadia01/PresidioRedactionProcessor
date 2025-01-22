@@ -3,12 +3,22 @@
 
 package presidioredactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
+import (
+	"strings"
+)
+
+func isStringHTTPUrl(endpoint string) bool {
+	return strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://")
+}
+
+func isStringGRPCUrl(endpoint string) bool {
+	return strings.HasPrefix(endpoint, "grpc://") || strings.HasPrefix(endpoint, "grpcs://")
+}
+
 type PresidioServiceConfig struct {
-	UseDocker 	              bool   `mapstructure:"use_docker"`
-	DockerAnalyzerEndpoint    string `mapstructure:"docker_analyzer_endpoint"`
-	DockerAnonymizerEndpoint  string `mapstructure:"docker_anonymizer_endpoint"`
-	ConcurrencyLimit          int    `mapstructure:"concurrency_limit,omitempty"`
-	PythonPath 	              string `mapstructure:"python_path,omitempty"`
+	AnalyzerEndpoint    string `mapstructure:"analyzer_endpoint"`
+	AnonymizerEndpoint  string `mapstructure:"anonymizer_endpoint"`
+	ConcurrencyLimit    int    `mapstructure:"concurrency_limit,omitempty"`
 }
 
 type Config struct {
@@ -33,7 +43,7 @@ type EntityAnonymizer struct {
 	Type        string `mapstructure:"type"`
 	NewValue    string `mapstructure:"new_value,omitempty"`
 	MaskingChar string `mapstructure:"masking_char,omitempty"`
-	CharsToMask int    `mapstructure:"chars_to_mask,omitempty"`
+	CharsToMask int32  `mapstructure:"chars_to_mask,omitempty"`
 	FromEnd     bool   `mapstructure:"from_end,omitempty"`
 	HashType    string `mapstructure:"hash_type,omitempty"`
 	Key         string `mapstructure:"key,omitempty"`

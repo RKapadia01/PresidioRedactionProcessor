@@ -17,15 +17,18 @@ RUN ./ocb --verbose --config builder-config.yaml
 FROM python:3.12-slim
 WORKDIR /app
 
-RUN pip install presidio_analyzer && \
-    pip install presidio_anonymizer && \
+COPY ./presidio_grpc_wrapper/requirements.txt /app
+RUN pip install -r requirements.txt && \
     python -m spacy download en_core_web_lg
 
 COPY --from=builder /app/_build/otelcol-presidio ./otel-collector
 COPY ./docker/config.yaml .
 
-COPY ./docker/local_scripts/* /
+COPY ./presidio_grpc_wrapper/*.py /app
+COPY ./presidio_grpc_wrapper/*.pyi /app
 
-EXPOSE 4317 4318
+EXPOSE 4317 4318 50051
 
-CMD ["./otel-collector", "--config", "/app/config.yaml"]
+COPY ./docker/CollectorWithPresidio.entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
