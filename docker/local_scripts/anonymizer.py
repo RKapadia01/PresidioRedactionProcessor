@@ -17,7 +17,7 @@ def main():
         anonymizer = AnonymizerEngine()
         response = anonymizer.anonymize(text=anonymizer_inputs["text"], analyzer_results=analyzer_results)
 
-        print(response.text)
+        print(response.to_json())
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON input. {e}", file=sys.stderr)
         sys.exit(1)
