@@ -2,12 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-<<<<<<< Updated upstream
-    branches: [ "main" ]
-=======
     branches: ["main"]
-  pull_request:
->>>>>>> Stashed changes
 
 jobs:
   build-and-push-docker:
