@@ -14,12 +14,21 @@ ENV GOMAXPROCS=4
 
 RUN ./ocb --verbose --config builder-config.yaml
 
-FROM debian:stable-slim
+FROM python:3.12-slim
 WORKDIR /app
+
+COPY ./presidio_grpc_wrapper/requirements.txt /app
+RUN pip install -r requirements.txt && \
+    python -m spacy download en_core_web_lg
 
 COPY --from=builder /app/_build/otelcol-presidio ./otel-collector
 COPY ./docker/config.yaml .
 
-EXPOSE 4317 4318
+COPY ./presidio_grpc_wrapper/*.py /app
+COPY ./presidio_grpc_wrapper/*.pyi /app
 
-CMD ["./otel-collector", "--config", "/app/config.yaml"]
+EXPOSE 4317 4318 50051
+
+COPY ./docker/CollectorWithPresidio.entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
