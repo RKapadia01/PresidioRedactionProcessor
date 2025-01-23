@@ -103,7 +103,7 @@ python -m grpc_tools.protoc \
 loadtest -c 1 -n 1000 -t 10 -P '{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"my-example-service"}}]},"scopeSpans":[{"scope":{"name":"example-instrumentation-scope","version":"1.0.0"},"spans":[{"traceId":"0123456789abcdef0123456789abcdef","spanId":"0123456789abcdef","name":"my-span-name","kind":"SPAN_KIND_INTERNAL","startTimeUnixNano":"1674457900000000000","endTimeUnixNano":"1674458000000000000","status":{"code":"STATUS_CODE_OK"},"attributes":[{"key":"user.name","value":{"stringValue":"Jacob Zhou"}},{"key":"user.email","value":{"stringValue":"jacob.zhou@example.com"}}]}]}]}]}' -T 'application/json' -m POST http://localhost:4318/v1/traces
 ```
 
-## Collector -> HTTP * 2 -> Presidio
+### Collector -> HTTP * 2 -> Presidio
 
 ```
 Target URL:          http://localhost:4318/v1/traces
@@ -126,7 +126,7 @@ Percentage of requests served within a certain time
  100%      354 ms (longest request)
 ```
 
-## Collector -> gRPC * 2 -> Presidio
+### Collector -> gRPC * 2 -> Presidio
 
 ```
 Target URL:          http://localhost:4318/v1/traces
