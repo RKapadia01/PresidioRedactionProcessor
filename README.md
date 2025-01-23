@@ -52,12 +52,18 @@ docker run --rm -d \
     rohankapadia/presidioredactioncollector:latest
 ```
 
+
 ## Build the Docker containers:
 
-- Local version: `docker build -f ./docker/CollectorOnly.local.Dockerfile .`
-- Published version: `docker build -f ./docker/CollectorOnly.Dockerfile .`
-- Local version with Presidio: `docker build -f ./docker/CollectorWithPresidio.local.Dockerfile .`
-- Published version with Presidio: `docker build -f ./docker/CollectorWithPresidio.Dockerfile .`
+If for some reason you would like to build the Docker containers with the Collector yourself,
+you can do so by running the following commands:
+
+- Build based on local codebase:
+    - Collector Only: `docker build -f ./docker/CollectorOnly.local.Dockerfile .`
+    - Collector with Presidio: `docker build -f ./docker/CollectorWithPresidio.local.Dockerfile .`
+- Build based on published codebase:
+    - Collector Only: `docker build -f ./docker/CollectorOnly.Dockerfile .`
+    - Collector with Presidio: `docker build -f ./docker/CollectorWithPresidio.Dockerfile .`
 
 
 ## Compile the proto file
