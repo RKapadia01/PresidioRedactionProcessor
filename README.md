@@ -1,5 +1,20 @@
 # PresidioRedactionProcessor
 
+## Quick Start
+
+To quickly test out the processor, you can run the container that has Presidio baked-in:
+
+```bash
+docker run --rm -d \
+    -p 4318:4318 \
+    -p 4317:4317 \
+    -p 50051:50051 \
+    rohankapadia/presidioredactioncollector:withpresidio
+```
+
+And then you can send the telemetry to port 4317/4318. To look at the telemetry ingested, you
+can directly look into the logs of the container.
+
 
 ## Build the Docker containers:
 
