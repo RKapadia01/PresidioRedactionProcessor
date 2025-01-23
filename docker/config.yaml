@@ -10,8 +10,12 @@ processors:
   # Refer to schema.yaml for configuration options
   presidio_redaction:
     presidio_service:
-      analyzer_endpoint: http://host.docker.internal:5002/analyze
-      anonymizer_endpoint: http://host.docker.internal:5001/anonymize
+      # If you use the Presidio baked into the container
+      analyzer_endpoint: grpc://localhost:50051
+      anonymizer_endpoint: grpc://localhost:50051
+      # If you use external Presidio services, you can specify the endpoints here
+      # analyzer_endpoint: http://host.docker.internal:5002/analyze
+      # anonymizer_endpoint: http://host.docker.internal:5001/anonymize
       concurrency_limit: 1 # Default to 1, pending https://github.com/microsoft/presidio/pull/1497
     analyzer:
       language: "en"
