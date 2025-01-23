@@ -15,13 +15,13 @@ import (
 )
 
 type presidioRedaction struct {
-	config             *Config
+	config             *PresidioRedactionProcessorConfig
 	logger             *zap.Logger
 	client             *http.Client
 	concurrencyLimiter chan struct{}
 }
 
-func newPresidioRedaction(_ context.Context, cfg *Config, logger *zap.Logger) *presidioRedaction {
+func newPresidioRedaction(_ context.Context, cfg *PresidioRedactionProcessorConfig, logger *zap.Logger) *presidioRedaction {
 	if cfg.PresidioServiceConfig.ConcurrencyLimit <= 0 {
 		cfg.PresidioServiceConfig.ConcurrencyLimit = 1
 	}

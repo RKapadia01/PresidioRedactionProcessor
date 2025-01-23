@@ -15,16 +15,16 @@ func isStringGRPCUrl(endpoint string) bool {
 	return strings.HasPrefix(endpoint, "grpc://") || strings.HasPrefix(endpoint, "grpcs://")
 }
 
+type PresidioRedactionProcessorConfig struct {
+	PresidioServiceConfig PresidioServiceConfig `mapstructure:"presidio_service"`
+	AnalyzerConfig        AnalyzerConfig   	    `mapstructure:"analyzer"`
+	AnonymizerConfig      AnonymizerConfig 	    `mapstructure:"anonymizer,omitempty"`
+}
+
 type PresidioServiceConfig struct {
 	AnalyzerEndpoint    string `mapstructure:"analyzer_endpoint"`
 	AnonymizerEndpoint  string `mapstructure:"anonymizer_endpoint"`
 	ConcurrencyLimit    int    `mapstructure:"concurrency_limit,omitempty"`
-}
-
-type Config struct {
-	PresidioServiceConfig PresidioServiceConfig `mapstructure:"presidio_service"`
-	AnalyzerConfig        AnalyzerConfig   	    `mapstructure:"analyzer"`
-	AnonymizerConfig      AnonymizerConfig 	    `mapstructure:"anonymizer,omitempty"`
 }
 
 type AnalyzerConfig struct {
