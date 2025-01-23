@@ -11,6 +11,8 @@ RUN curl --proto '=https' --tlsv1.2 -fL -o ocb \
 
 ENV GO111MODULE=on
 ENV GOMAXPROCS=4
+ENV GOOS=linux
+ENV GOARCH=amd64
 
 RUN ./ocb --verbose --config builder-config.yaml
 
