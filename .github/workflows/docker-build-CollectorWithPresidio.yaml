@@ -26,7 +26,7 @@ jobs:
           # Path to the directory containing your Dockerfile
           context: .
           # Specify the path to your Dockerfile relative to the repository root
-          file: docker/CollectorWithPresidio.Dockerfile
+          file: docker/CollectorWithPresidio.local.Dockerfile
           platforms: linux/amd64
           push: true # set to false if you only want to build without pushing
           tags: |
