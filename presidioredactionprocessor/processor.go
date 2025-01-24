@@ -125,6 +125,7 @@ func (s *presidioRedaction) getRedactedValue(ctx context.Context, value string) 
 		}
 		return anonymizerResult.Text, nil
 	}
+	
 	analysisResults, err := s.callPresidioAnalyzer(ctx, value)
 	if err != nil {
 		return "", err

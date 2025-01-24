@@ -30,7 +30,7 @@ const (
 type PresidioRedactionProcessorClient interface {
 	Analyze(ctx context.Context, in *PresidioAnalyzerRequest, opts ...grpc.CallOption) (*PresidioAnalyzerResponses, error)
 	Anonymize(ctx context.Context, in *PresidioAnonymizerRequest, opts ...grpc.CallOption) (*PresidioAnonymizerResponse, error)
-	AnalyzeAndAnonymize(ctx context.Context, in *PresidioAnalyzerRequest, opts ...grpc.CallOption) (*PresidioAnonymizerResponse, error)
+	AnalyzeAndAnonymize(ctx context.Context, in *PresidioAnalyzerAnomymizerRequest, opts ...grpc.CallOption) (*PresidioAnonymizerResponse, error)
 }
 
 type presidioRedactionProcessorClient struct {
@@ -61,7 +61,7 @@ func (c *presidioRedactionProcessorClient) Anonymize(ctx context.Context, in *Pr
 	return out, nil
 }
 
-func (c *presidioRedactionProcessorClient) AnalyzeAndAnonymize(ctx context.Context, in *PresidioAnalyzerRequest, opts ...grpc.CallOption) (*PresidioAnonymizerResponse, error) {
+func (c *presidioRedactionProcessorClient) AnalyzeAndAnonymize(ctx context.Context, in *PresidioAnalyzerAnomymizerRequest, opts ...grpc.CallOption) (*PresidioAnonymizerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PresidioAnonymizerResponse)
 	err := c.cc.Invoke(ctx, PresidioRedactionProcessor_AnalyzeAndAnonymize_FullMethodName, in, out, cOpts...)
@@ -77,7 +77,7 @@ func (c *presidioRedactionProcessorClient) AnalyzeAndAnonymize(ctx context.Conte
 type PresidioRedactionProcessorServer interface {
 	Analyze(context.Context, *PresidioAnalyzerRequest) (*PresidioAnalyzerResponses, error)
 	Anonymize(context.Context, *PresidioAnonymizerRequest) (*PresidioAnonymizerResponse, error)
-	AnalyzeAndAnonymize(context.Context, *PresidioAnalyzerRequest) (*PresidioAnonymizerResponse, error)
+	AnalyzeAndAnonymize(context.Context, *PresidioAnalyzerAnomymizerRequest) (*PresidioAnonymizerResponse, error)
 	mustEmbedUnimplementedPresidioRedactionProcessorServer()
 }
 
@@ -94,7 +94,7 @@ func (UnimplementedPresidioRedactionProcessorServer) Analyze(context.Context, *P
 func (UnimplementedPresidioRedactionProcessorServer) Anonymize(context.Context, *PresidioAnonymizerRequest) (*PresidioAnonymizerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Anonymize not implemented")
 }
-func (UnimplementedPresidioRedactionProcessorServer) AnalyzeAndAnonymize(context.Context, *PresidioAnalyzerRequest) (*PresidioAnonymizerResponse, error) {
+func (UnimplementedPresidioRedactionProcessorServer) AnalyzeAndAnonymize(context.Context, *PresidioAnalyzerAnomymizerRequest) (*PresidioAnonymizerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeAndAnonymize not implemented")
 }
 func (UnimplementedPresidioRedactionProcessorServer) mustEmbedUnimplementedPresidioRedactionProcessorServer() {
@@ -156,7 +156,7 @@ func _PresidioRedactionProcessor_Anonymize_Handler(srv interface{}, ctx context.
 }
 
 func _PresidioRedactionProcessor_AnalyzeAndAnonymize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PresidioAnalyzerRequest)
+	in := new(PresidioAnalyzerAnomymizerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func _PresidioRedactionProcessor_AnalyzeAndAnonymize_Handler(srv interface{}, ct
 		FullMethod: PresidioRedactionProcessor_AnalyzeAndAnonymize_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PresidioRedactionProcessorServer).AnalyzeAndAnonymize(ctx, req.(*PresidioAnalyzerRequest))
+		return srv.(PresidioRedactionProcessorServer).AnalyzeAndAnonymize(ctx, req.(*PresidioAnalyzerAnomymizerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
