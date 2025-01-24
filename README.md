@@ -96,3 +96,55 @@ python -m grpc_tools.protoc \
     --grpc_python_out=./presidio_grpc_wrapper \
     ./presidio.proto
 ```
+
+## Benchmarks
+
+```
+loadtest -c 1 -n 1000 -t 10 -P '{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"my-example-service"}}]},"scopeSpans":[{"scope":{"name":"example-instrumentation-scope","version":"1.0.0"},"spans":[{"traceId":"0123456789abcdef0123456789abcdef","spanId":"0123456789abcdef","name":"my-span-name","kind":"SPAN_KIND_INTERNAL","startTimeUnixNano":"1674457900000000000","endTimeUnixNano":"1674458000000000000","status":{"code":"STATUS_CODE_OK"},"attributes":[{"key":"user.name","value":{"stringValue":"Jacob Zhou"}},{"key":"user.email","value":{"stringValue":"jacob.zhou@example.com"}}]}]}]}]}' -T 'application/json' -m POST http://localhost:4318/v1/traces
+```
+
+### Collector -> HTTP * 2 -> Presidio
+
+```
+Target URL:          http://localhost:4318/v1/traces
+Max requests:        1000
+Concurrent clients:  32
+Running on cores:    16
+Agent:               none
+
+Completed requests:  1000
+Total errors:        0
+Total time:          7.905 s
+Mean latency:        248.8 ms
+Effective rps:       127
+
+Percentage of requests served within a certain time
+  50%      240 ms
+  90%      321 ms
+  95%      337 ms
+  99%      352 ms
+ 100%      354 ms (longest request)
+```
+
+### Collector -> gRPC * 2 -> Presidio
+
+```
+Target URL:          http://localhost:4318/v1/traces
+Max requests:        1000
+Concurrent clients:  32
+Running on cores:    16
+Agent:               none
+
+Completed requests:  1000
+Total errors:        0
+Total time:          8.56 s
+Mean latency:        268.8 ms
+Effective rps:       117
+
+Percentage of requests served within a certain time
+  50%      269 ms
+  90%      301 ms
+  95%      308 ms
+  99%      326 ms
+ 100%      347 ms (longest request)
+```
