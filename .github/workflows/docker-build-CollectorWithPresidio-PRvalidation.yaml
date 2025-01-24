@@ -1,0 +1,24 @@
+name: Build and Push Docker Image With Presidio - PR validation
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-push-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      # Build and push the Docker image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          # Path to the directory containing your Dockerfile
+          context: .
+          # Specify the path to your Dockerfile relative to the repository root
+          file: docker/CollectorWithPresidio.local.Dockerfile
+          platforms: linux/amd64
+          push: false # set to false if you only want to build without pushing
