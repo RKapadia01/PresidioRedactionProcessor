@@ -85,3 +85,26 @@ class PresidioAnonymizerResponse(_message.Message):
     end: int
     text: str
     def __init__(self, operation: _Optional[str] = ..., entity_type: _Optional[str] = ..., start: _Optional[int] = ..., end: _Optional[int] = ..., text: _Optional[str] = ...) -> None: ...
+
+class PresidioAnalyzerAnomymizerRequest(_message.Message):
+    __slots__ = ("text", "language", "score_threshold", "entities", "context", "anonymizers")
+    class AnonymizersEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: PresidioAnonymizer
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[PresidioAnonymizer, _Mapping]] = ...) -> None: ...
+    TEXT_FIELD_NUMBER: _ClassVar[int]
+    LANGUAGE_FIELD_NUMBER: _ClassVar[int]
+    SCORE_THRESHOLD_FIELD_NUMBER: _ClassVar[int]
+    ENTITIES_FIELD_NUMBER: _ClassVar[int]
+    CONTEXT_FIELD_NUMBER: _ClassVar[int]
+    ANONYMIZERS_FIELD_NUMBER: _ClassVar[int]
+    text: str
+    language: str
+    score_threshold: float
+    entities: _containers.RepeatedScalarFieldContainer[str]
+    context: _containers.RepeatedScalarFieldContainer[str]
+    anonymizers: _containers.MessageMap[str, PresidioAnonymizer]
+    def __init__(self, text: _Optional[str] = ..., language: _Optional[str] = ..., score_threshold: _Optional[float] = ..., entities: _Optional[_Iterable[str]] = ..., context: _Optional[_Iterable[str]] = ..., anonymizers: _Optional[_Mapping[str, PresidioAnonymizer]] = ...) -> None: ...

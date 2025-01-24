@@ -46,7 +46,7 @@ class PresidioRedactionProcessorStub(object):
                 _registered_method=True)
         self.AnalyzeAndAnonymize = channel.unary_unary(
                 '/PresidioRedactionProcessor/AnalyzeAndAnonymize',
-                request_serializer=presidio__pb2.PresidioAnalyzerRequest.SerializeToString,
+                request_serializer=presidio__pb2.PresidioAnalyzerAnomymizerRequest.SerializeToString,
                 response_deserializer=presidio__pb2.PresidioAnonymizerResponse.FromString,
                 _registered_method=True)
 
@@ -87,7 +87,7 @@ def add_PresidioRedactionProcessorServicer_to_server(servicer, server):
             ),
             'AnalyzeAndAnonymize': grpc.unary_unary_rpc_method_handler(
                     servicer.AnalyzeAndAnonymize,
-                    request_deserializer=presidio__pb2.PresidioAnalyzerRequest.FromString,
+                    request_deserializer=presidio__pb2.PresidioAnalyzerAnomymizerRequest.FromString,
                     response_serializer=presidio__pb2.PresidioAnonymizerResponse.SerializeToString,
             ),
     }
@@ -170,7 +170,7 @@ class PresidioRedactionProcessor(object):
             request,
             target,
             '/PresidioRedactionProcessor/AnalyzeAndAnonymize',
-            presidio__pb2.PresidioAnalyzerRequest.SerializeToString,
+            presidio__pb2.PresidioAnalyzerAnomymizerRequest.SerializeToString,
             presidio__pb2.PresidioAnonymizerResponse.FromString,
             options,
             channel_credentials,

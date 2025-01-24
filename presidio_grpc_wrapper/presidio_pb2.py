@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0epresidio.proto\"u\n\x17PresidioAnalyzerRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x10\n\x08language\x18\x02 \x01(\t\x12\x17\n\x0fscore_threshold\x18\x03 \x01(\x01\x12\x10\n\x08\x65ntities\x18\x04 \x03(\t\x12\x0f\n\x07\x63ontext\x18\x05 \x03(\t\"P\n\x19PresidioAnalyzerResponses\x12\x33\n\x10\x61nalyzer_results\x18\x01 \x03(\x0b\x32\x19.PresidioAnalyzerResponse\"Z\n\x18PresidioAnalyzerResponse\x12\r\n\x05start\x18\x01 \x01(\x05\x12\x0b\n\x03\x65nd\x18\x02 \x01(\x05\x12\r\n\x05score\x18\x03 \x01(\x01\x12\x13\n\x0b\x65ntity_type\x18\x04 \x01(\t\"\xe9\x01\n\x19PresidioAnonymizerRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\x12@\n\x0b\x61nonymizers\x18\x02 \x03(\x0b\x32+.PresidioAnonymizerRequest.AnonymizersEntry\x12\x33\n\x10\x61nalyzer_results\x18\x03 \x03(\x0b\x32\x19.PresidioAnalyzerResponse\x1aG\n\x10\x41nonymizersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\"\n\x05value\x18\x02 \x01(\x0b\x32\x13.PresidioAnonymizer:\x02\x38\x01\"\x94\x01\n\x12PresidioAnonymizer\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnew_value\x18\x02 \x01(\t\x12\x14\n\x0cmasking_char\x18\x03 \x01(\t\x12\x15\n\rchars_to_mask\x18\x04 \x01(\x05\x12\x10\n\x08\x66rom_end\x18\x05 \x01(\x08\x12\x11\n\thash_type\x18\x06 \x01(\t\x12\x0b\n\x03key\x18\x07 \x01(\t\"n\n\x1aPresidioAnonymizerResponse\x12\x11\n\toperation\x18\x01 \x01(\t\x12\x13\n\x0b\x65ntity_type\x18\x02 \x01(\t\x12\r\n\x05start\x18\x03 \x01(\x05\x12\x0b\n\x03\x65nd\x18\x04 \x01(\x05\x12\x0c\n\x04text\x18\x05 \x01(\t2\xf7\x01\n\x1aPresidioRedactionProcessor\x12\x41\n\x07\x41nalyze\x12\x18.PresidioAnalyzerRequest\x1a\x1a.PresidioAnalyzerResponses\"\x00\x12\x46\n\tAnonymize\x12\x1a.PresidioAnonymizerRequest\x1a\x1b.PresidioAnonymizerResponse\"\x00\x12N\n\x13\x41nalyzeAndAnonymize\x12\x18.PresidioAnalyzerRequest\x1a\x1b.PresidioAnonymizerResponse\"\x00\x42MZKgithub.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessorb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0epresidio.proto\"u\n\x17PresidioAnalyzerRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x10\n\x08language\x18\x02 \x01(\t\x12\x17\n\x0fscore_threshold\x18\x03 \x01(\x01\x12\x10\n\x08\x65ntities\x18\x04 \x03(\t\x12\x0f\n\x07\x63ontext\x18\x05 \x03(\t\"P\n\x19PresidioAnalyzerResponses\x12\x33\n\x10\x61nalyzer_results\x18\x01 \x03(\x0b\x32\x19.PresidioAnalyzerResponse\"Z\n\x18PresidioAnalyzerResponse\x12\r\n\x05start\x18\x01 \x01(\x05\x12\x0b\n\x03\x65nd\x18\x02 \x01(\x05\x12\r\n\x05score\x18\x03 \x01(\x01\x12\x13\n\x0b\x65ntity_type\x18\x04 \x01(\t\"\xe9\x01\n\x19PresidioAnonymizerRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\x12@\n\x0b\x61nonymizers\x18\x02 \x03(\x0b\x32+.PresidioAnonymizerRequest.AnonymizersEntry\x12\x33\n\x10\x61nalyzer_results\x18\x03 \x03(\x0b\x32\x19.PresidioAnalyzerResponse\x1aG\n\x10\x41nonymizersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\"\n\x05value\x18\x02 \x01(\x0b\x32\x13.PresidioAnonymizer:\x02\x38\x01\"\x94\x01\n\x12PresidioAnonymizer\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x11\n\tnew_value\x18\x02 \x01(\t\x12\x14\n\x0cmasking_char\x18\x03 \x01(\t\x12\x15\n\rchars_to_mask\x18\x04 \x01(\x05\x12\x10\n\x08\x66rom_end\x18\x05 \x01(\x08\x12\x11\n\thash_type\x18\x06 \x01(\t\x12\x0b\n\x03key\x18\x07 \x01(\t\"n\n\x1aPresidioAnonymizerResponse\x12\x11\n\toperation\x18\x01 \x01(\t\x12\x13\n\x0b\x65ntity_type\x18\x02 \x01(\t\x12\r\n\x05start\x18\x03 \x01(\x05\x12\x0b\n\x03\x65nd\x18\x04 \x01(\x05\x12\x0c\n\x04text\x18\x05 \x01(\t\"\x92\x02\n!PresidioAnalyzerAnomymizerRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x10\n\x08language\x18\x02 \x01(\t\x12\x17\n\x0fscore_threshold\x18\x03 \x01(\x01\x12\x10\n\x08\x65ntities\x18\x04 \x03(\t\x12\x0f\n\x07\x63ontext\x18\x05 \x03(\t\x12H\n\x0b\x61nonymizers\x18\x06 \x03(\x0b\x32\x33.PresidioAnalyzerAnomymizerRequest.AnonymizersEntry\x1aG\n\x10\x41nonymizersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\"\n\x05value\x18\x02 \x01(\x0b\x32\x13.PresidioAnonymizer:\x02\x38\x01\x32\x81\x02\n\x1aPresidioRedactionProcessor\x12\x41\n\x07\x41nalyze\x12\x18.PresidioAnalyzerRequest\x1a\x1a.PresidioAnalyzerResponses\"\x00\x12\x46\n\tAnonymize\x12\x1a.PresidioAnonymizerRequest\x1a\x1b.PresidioAnonymizerResponse\"\x00\x12X\n\x13\x41nalyzeAndAnonymize\x12\".PresidioAnalyzerAnomymizerRequest\x1a\x1b.PresidioAnonymizerResponse\"\x00\x42MZKgithub.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessorb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,6 +34,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'ZKgithub.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor'
   _globals['_PRESIDIOANONYMIZERREQUEST_ANONYMIZERSENTRY']._loaded_options = None
   _globals['_PRESIDIOANONYMIZERREQUEST_ANONYMIZERSENTRY']._serialized_options = b'8\001'
+  _globals['_PRESIDIOANALYZERANOMYMIZERREQUEST_ANONYMIZERSENTRY']._loaded_options = None
+  _globals['_PRESIDIOANALYZERANOMYMIZERREQUEST_ANONYMIZERSENTRY']._serialized_options = b'8\001'
   _globals['_PRESIDIOANALYZERREQUEST']._serialized_start=18
   _globals['_PRESIDIOANALYZERREQUEST']._serialized_end=135
   _globals['_PRESIDIOANALYZERRESPONSES']._serialized_start=137
@@ -48,6 +50,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_PRESIDIOANONYMIZER']._serialized_end=696
   _globals['_PRESIDIOANONYMIZERRESPONSE']._serialized_start=698
   _globals['_PRESIDIOANONYMIZERRESPONSE']._serialized_end=808
-  _globals['_PRESIDIOREDACTIONPROCESSOR']._serialized_start=811
-  _globals['_PRESIDIOREDACTIONPROCESSOR']._serialized_end=1058
+  _globals['_PRESIDIOANALYZERANOMYMIZERREQUEST']._serialized_start=811
+  _globals['_PRESIDIOANALYZERANOMYMIZERREQUEST']._serialized_end=1085
+  _globals['_PRESIDIOANALYZERANOMYMIZERREQUEST_ANONYMIZERSENTRY']._serialized_start=474
+  _globals['_PRESIDIOANALYZERANOMYMIZERREQUEST_ANONYMIZERSENTRY']._serialized_end=545
+  _globals['_PRESIDIOREDACTIONPROCESSOR']._serialized_start=1088
+  _globals['_PRESIDIOREDACTIONPROCESSOR']._serialized_end=1345
 # @@protoc_insertion_point(module_scope)

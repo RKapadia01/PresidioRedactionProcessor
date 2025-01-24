@@ -5,7 +5,7 @@ option go_package = "github.com/RKapadia01/PresidioRedactionProcessor/presidiore
 service PresidioRedactionProcessor {
   rpc Analyze(PresidioAnalyzerRequest) returns (PresidioAnalyzerResponses) {}
   rpc Anonymize(PresidioAnonymizerRequest) returns (PresidioAnonymizerResponse) {}
-  rpc AnalyzeAndAnonymize(PresidioAnalyzerRequest) returns (PresidioAnonymizerResponse) {}
+  rpc AnalyzeAndAnonymize(PresidioAnalyzerAnomymizerRequest) returns (PresidioAnonymizerResponse) {}
 }
 
 // Represents a request to analyze text for PII entities.
@@ -55,4 +55,14 @@ message PresidioAnonymizerResponse {
   int32 start = 3;
   int32 end = 4;
   string text = 5;
+}
+
+// Represents a request to analyze and anonymize text.
+message PresidioAnalyzerAnomymizerRequest {
+  string text = 1;
+  string language = 2;
+  double score_threshold = 3;
+  repeated string entities = 4;
+  repeated string context = 5;
+  map<string, PresidioAnonymizer> anonymizers = 6;
 }

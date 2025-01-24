@@ -100,7 +100,7 @@ python -m grpc_tools.protoc \
 ## Benchmarks
 
 ```
-loadtest -c 1 -n 1000 -t 10 -P '{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"my-example-service"}}]},"scopeSpans":[{"scope":{"name":"example-instrumentation-scope","version":"1.0.0"},"spans":[{"traceId":"0123456789abcdef0123456789abcdef","spanId":"0123456789abcdef","name":"my-span-name","kind":"SPAN_KIND_INTERNAL","startTimeUnixNano":"1674457900000000000","endTimeUnixNano":"1674458000000000000","status":{"code":"STATUS_CODE_OK"},"attributes":[{"key":"user.name","value":{"stringValue":"Jacob Zhou"}},{"key":"user.email","value":{"stringValue":"jacob.zhou@example.com"}}]}]}]}]}' -T 'application/json' -m POST http://localhost:4318/v1/traces
+loadtest -c 2 -n 1000 -t 10 -P '{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"my-example-service"}}]},"scopeSpans":[{"scope":{"name":"example-instrumentation-scope","version":"1.0.0"},"spans":[{"traceId":"0123456789abcdef0123456789abcdef","spanId":"0123456789abcdef","name":"my-span-name","kind":"SPAN_KIND_INTERNAL","startTimeUnixNano":"1674457900000000000","endTimeUnixNano":"1674458000000000000","status":{"code":"STATUS_CODE_OK"},"attributes":[{"key":"user.name","value":{"stringValue":"Jacob Zhou"}},{"key":"user.email","value":{"stringValue":"jacob.zhou@example.com"}}]}]}]}]}' -T 'application/json' -m POST http://localhost:4318/v1/traces
 ```
 
 ### Collector -> HTTP * 2 -> Presidio
@@ -147,4 +147,27 @@ Percentage of requests served within a certain time
   95%      308 ms
   99%      326 ms
  100%      347 ms (longest request)
+```
+
+### Collector -> gRPC -> Presidio
+
+```
+Target URL:          http://localhost:4318/v1/traces
+Max requests:        1000
+Concurrent clients:  32
+Running on cores:    16
+Agent:               none
+
+Completed requests:  1000
+Total errors:        0
+Total time:          7.736 s
+Mean latency:        242.7 ms
+Effective rps:       129
+
+Percentage of requests served within a certain time
+  50%      243 ms
+  90%      266 ms
+  95%      271 ms
+  99%      285 ms
+ 100%      295 ms (longest request)
 ```

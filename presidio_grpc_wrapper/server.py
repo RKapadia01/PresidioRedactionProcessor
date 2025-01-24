@@ -73,9 +73,29 @@ class Server(presidio_pb2_grpc.PresidioRedactionProcessorServicer):
             text=request.text, language=request.language,
             entities=request.entities, score_threshold=request.score_threshold,
             context=request.context)
-        anonymizer_results = anonymizer.anonymize(
-            text=request.text, analyzer_results=analyzer_results)
-        return presidio_pb2.PresidioAnonymizerResponse(text=anonymizer_results)
+
+        operators_py = {}
+        for key, value in request.anonymizers.items():
+            operator = OperatorConfig.from_json({
+                "type": value.type,
+                "new_value": value.new_value,
+                "masking_char": value.masking_char,
+                "chars_to_mask": value.chars_to_mask,
+                "from_end": value.from_end,
+                "hash_type": value.hash_type,
+                "key": value.key
+            })
+            operators_py[key] = operator
+            
+        anonymizer_result = anonymizer.anonymize(
+            text=request.text,
+            operators=operators_py,
+            analyzer_results=analyzer_results
+        )
+        
+        return presidio_pb2.PresidioAnonymizerResponse(
+            text=anonymizer_result.text,
+        )
 
 
 def serve():

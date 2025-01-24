@@ -117,6 +117,15 @@ func (s *presidioRedaction) processAttribute(ctx context.Context, attributes pco
 }
 
 func (s *presidioRedaction) getRedactedValue(ctx context.Context, value string) (string, error) {
+	if isStringGRPCUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint) &&
+		isStringGRPCUrl(s.config.PresidioServiceConfig.AnonymizerEndpoint) {
+		anonymizerResult, err := s.callPresidioGRPC(ctx, value)
+		if err != nil {
+			return "", err
+		}
+		return anonymizerResult.Text, nil
+	}
+	
 	analysisResults, err := s.callPresidioAnalyzer(ctx, value)
 	if err != nil {
 		return "", err
