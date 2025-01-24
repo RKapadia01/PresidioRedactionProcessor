@@ -11,7 +11,7 @@ import (
 	"strings"
 	
 	"google.golang.org/grpc"
-    "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (s *presidioRedaction) callPresidioAnalyzer(ctx context.Context, value string) ([]*PresidioAnalyzerResponse, error) {
