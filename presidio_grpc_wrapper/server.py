@@ -8,6 +8,7 @@ import presidio_pb2_grpc
 from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import RecognizerResult
+from presidio_anonymizer.entities import OperatorConfig
 
 analyzer = AnalyzerEngine()
 anonymizer = AnonymizerEngine()
@@ -44,8 +45,22 @@ class Server(presidio_pb2_grpc.PresidioRedactionProcessorServicer):
             )
             recognizer_results_py.append(py_result)
 
+        operators_py = {}
+        for key, value in request.anonymizers.items():
+            operator = OperatorConfig.from_json({
+                "type": value.type,
+                "new_value": value.new_value,
+                "masking_char": value.masking_char,
+                "chars_to_mask": value.chars_to_mask,
+                "from_end": value.from_end,
+                "hash_type": value.hash_type,
+                "key": value.key
+            })
+            operators_py[key] = operator
+
         anonymizer_result = anonymizer.anonymize(
             text=request.text,
+            operators=operators_py,
             analyzer_results=recognizer_results_py
         )
         
