@@ -55,12 +55,25 @@ class Server(presidio_pb2_grpc.PresidioRedactionProcessorServicer):
 
     def AnalyzeAndAnonymize(self, request, context):
         analyzer_results = analyzer.analyze(
-            text=request.text, language=request.language,
-            entities=request.entities, score_threshold=request.score_threshold,
-            context=request.context)
+            text=request.text,
+            language=request.language,
+            entities=request.entities,
+            score_threshold=request.score_threshold,
+            context=request.context
+        )
+
+        if not analyzer_results:
+            return presidio_pb2.PresidioAnonymizerResponse(
+                text=request.text
+            )
+
         anonymizer_results = anonymizer.anonymize(
-            text=request.text, analyzer_results=analyzer_results)
-        return presidio_pb2.PresidioAnonymizerResponse(text=anonymizer_results)
+            text=request.text,
+            analyzer_results=analyzer_results
+        )
+        return presidio_pb2.PresidioAnonymizerResponse(
+            text=anonymizer_results.text
+        )
 
 
 def serve():
