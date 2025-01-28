@@ -7,7 +7,7 @@ python /app/server.py &
 PROCESSOR_A_PID=$!
 
 # Start Processor B in the background
-echo "Starting OPTL Collector..."
+echo "Starting OTLP Collector..."
 ./otel-collector --config /app/config.yaml &
 PROCESSOR_B_PID=$!
 
