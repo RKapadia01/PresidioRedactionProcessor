@@ -16,12 +16,14 @@ ENV GOARCH=amd64
 
 RUN ./ocb --verbose --config builder-config.yaml
 
-FROM python:3.12-slim
+FROM condaforge/mambaforge
 WORKDIR /app
 
 COPY ./presidio_grpc_wrapper/requirements.txt /app
-RUN pip install -r requirements.txt && \
-    python -m spacy download en_core_web_lg
+
+RUN conda install -c conda-forge spacy && \
+  pip install -r requirements.txt && \
+  python -m spacy download en_core_web_lg
 
 COPY --from=builder /app/_build/otelcol-presidio ./otel-collector
 COPY ./docker/config.yaml .
