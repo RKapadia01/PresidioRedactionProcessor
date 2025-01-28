@@ -4,12 +4,8 @@
 package presidioredactionprocessor
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -24,7 +20,7 @@ import (
 )
 
 type presidioRedaction struct {
-	config             *Config
+	config             *PresidioRedactionProcessorConfig
 	logger             *zap.Logger
 	client             *http.Client
 	concurrencyLimiter chan struct{}
@@ -32,16 +28,16 @@ type presidioRedaction struct {
 	logConditions      []ottl.Condition[ottllog.TransformContext]
 }
 
-func newPresidioLogRedaction(ctx context.Context, cfg *Config, settings component.TelemetrySettings, logger *zap.Logger) *presidioRedaction {
+func newPresidioLogRedaction(ctx context.Context, cfg *PresidioRedactionProcessorConfig, settings component.TelemetrySettings, logger *zap.Logger) *presidioRedaction {
 	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
 	if err != nil {
 		logger.Error("Error creating log parser", zap.Error(err))
 		return nil
 	}
 
-	logConditions := make([]ottl.Condition[ottllog.TransformContext], 0, len(cfg.TraceConditions))
+	logConditions := make([]ottl.Condition[ottllog.TransformContext], 0, len(cfg.PresidioServiceConfig.TraceConditions))
 
-	for _, condition := range cfg.LogConditions {
+	for _, condition := range cfg.PresidioServiceConfig.LogConditions {
 		expr, err := logParser.ParseCondition(condition)
 
 		if err != nil {
@@ -56,21 +52,21 @@ func newPresidioLogRedaction(ctx context.Context, cfg *Config, settings componen
 		config:             cfg,
 		logger:             logger,
 		client:             &http.Client{},
-		concurrencyLimiter: make(chan struct{}, cfg.ConcurrencyLimit),
+		concurrencyLimiter: make(chan struct{}, cfg.PresidioServiceConfig.ConcurrencyLimit),
 		logConditions:      logConditions,
 	}
 }
 
-func newPresidioTraceRedaction(ctx context.Context, cfg *Config, settings component.TelemetrySettings, logger *zap.Logger) *presidioRedaction {
+func newPresidioTraceRedaction(ctx context.Context, cfg *PresidioRedactionProcessorConfig, settings component.TelemetrySettings, logger *zap.Logger) *presidioRedaction {
 	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings)
 	if err != nil {
 		logger.Error("Error creating span parser", zap.Error(err))
 		return nil
 	}
 
-	traceConditions := make([]ottl.Condition[ottlspan.TransformContext], 0, len(cfg.TraceConditions))
+	traceConditions := make([]ottl.Condition[ottlspan.TransformContext], 0, len(cfg.PresidioServiceConfig.TraceConditions))
 
-	for _, condition := range cfg.TraceConditions {
+	for _, condition := range cfg.PresidioServiceConfig.TraceConditions {
 		expr, err := parser.ParseCondition(condition)
 
 		if err != nil {
@@ -85,7 +81,7 @@ func newPresidioTraceRedaction(ctx context.Context, cfg *Config, settings compon
 		config:             cfg,
 		logger:             logger,
 		client:             &http.Client{},
-		concurrencyLimiter: make(chan struct{}, cfg.ConcurrencyLimit),
+		concurrencyLimiter: make(chan struct{}, cfg.PresidioServiceConfig.ConcurrencyLimit),
 		traceConditions:    traceConditions,
 	}
 }
@@ -139,7 +135,7 @@ func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.Reso
 				continue
 			}
 
-			s.redactAttr(ctx, log.Attributes())
+			s.processAttribute(ctx, log.Attributes())
 
 			logBodyStr := log.Body().Str()
 
@@ -160,7 +156,7 @@ func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.Reso
 
 func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
 	rsAttrs := rs.Resource().Attributes()
-	s.redactAttr(ctx, rsAttrs)
+	s.processAttribute(ctx, rsAttrs)
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
@@ -192,12 +188,12 @@ func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.R
 			}
 
 			spanAttrs := span.Attributes()
-			s.redactAttr(ctx, spanAttrs)
+			s.processAttribute(ctx, spanAttrs)
 		}
 	}
 }
 
-func (s *presidioRedaction) redactAttr(ctx context.Context, attributes pcommon.Map) {
+func (s *presidioRedaction) processAttribute(ctx context.Context, attributes pcommon.Map) {
 	attributes.Range(func(k string, v pcommon.Value) bool {
 		valueStr := v.Str()
 		if len(valueStr) == 0 {
@@ -216,6 +212,15 @@ func (s *presidioRedaction) redactAttr(ctx context.Context, attributes pcommon.M
 }
 
 func (s *presidioRedaction) getRedactedValue(ctx context.Context, value string) (string, error) {
+	if isStringGRPCUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint) &&
+		isStringGRPCUrl(s.config.PresidioServiceConfig.AnonymizerEndpoint) {
+		anonymizerResult, err := s.callPresidioGRPC(ctx, value)
+		if err != nil {
+			return "", err
+		}
+		return anonymizerResult.Text, nil
+	}
+
 	analysisResults, err := s.callPresidioAnalyzer(ctx, value)
 	if err != nil {
 		return "", err
@@ -231,150 +236,4 @@ func (s *presidioRedaction) getRedactedValue(ctx context.Context, value string) 
 	}
 
 	return anonymizerResult.Text, nil
-}
-
-func (s *presidioRedaction) callPresidioAnalyzer(ctx context.Context, value string) ([]PresidioAnalyzerResponse, error) {
-	requestPayload := PresidioAnalyzerRequest{
-		Text:           value,
-		Language:       "en",
-		ScoreThreshold: s.config.AnalyzerConfig.ScoreThreshold,
-		Entities:       s.config.AnalyzerConfig.Entities,
-		Context:        s.config.AnalyzerConfig.Context,
-	}
-
-	jsonPayload, err := json.Marshal(requestPayload)
-	if err != nil {
-		return []PresidioAnalyzerResponse{}, fmt.Errorf("failed to marshal request payload: %v", err)
-	}
-
-	headers := map[string]string{
-		"Content-Type": "application/json",
-	}
-
-	url := s.config.AnalyzerEndpoint
-
-	resp, err := s.sendHTTPRequest(ctx, http.MethodPost, url, jsonPayload, headers)
-	if err != nil {
-		return []PresidioAnalyzerResponse{}, err
-	}
-	defer resp.Body.Close()
-
-	var presidioAnalyzerResponse []PresidioAnalyzerResponse
-	err = json.NewDecoder(resp.Body).Decode(&presidioAnalyzerResponse)
-	if err != nil {
-		return []PresidioAnalyzerResponse{}, err
-	}
-
-	return presidioAnalyzerResponse, nil
-}
-
-func (s *presidioRedaction) callPresidioAnonymizer(ctx context.Context, value string, analyzerResults []PresidioAnalyzerResponse) (PresidioAnonymizerResponse, error) {
-	anonymizers := make(map[string]PresidioAnonymizer)
-	for _, entityAnonymizer := range s.config.AnonymizerConfig.Anonymizers {
-		anonymizers[entityAnonymizer.Entity] = PresidioAnonymizer{
-			Type:        strings.ToLower(entityAnonymizer.Type),
-			NewValue:    entityAnonymizer.NewValue,
-			MaskingChar: entityAnonymizer.MaskingChar,
-			CharsToMask: entityAnonymizer.CharsToMask,
-			FromEnd:     entityAnonymizer.FromEnd,
-			HashType:    entityAnonymizer.HashType,
-			Key:         entityAnonymizer.Key,
-		}
-	}
-
-	requestPayload := PresidioAnonymizerRequest{
-		Text:            value,
-		Anonymizers:     anonymizers,
-		AnalyzerResults: analyzerResults,
-	}
-
-	jsonPayload, err := json.Marshal(requestPayload)
-	if err != nil {
-		return PresidioAnonymizerResponse{}, fmt.Errorf("failed to marshal request payload: %v", err)
-	}
-
-	headers := map[string]string{
-		"Content-Type": "application/json",
-	}
-
-	url := s.config.AnonymizerEndpoint
-	resp, err := s.sendHTTPRequest(ctx, http.MethodPost, url, jsonPayload, headers)
-	if err != nil {
-		return PresidioAnonymizerResponse{}, err
-	}
-	defer resp.Body.Close()
-
-	var presidioAnonymizerResponse PresidioAnonymizerResponse
-	err = json.NewDecoder(resp.Body).Decode(&presidioAnonymizerResponse)
-	if err != nil {
-		return PresidioAnonymizerResponse{}, err
-	}
-
-	return presidioAnonymizerResponse, nil
-}
-
-func (s *presidioRedaction) sendHTTPRequest(ctx context.Context, method, url string, payload []byte, headers map[string]string) (*http.Response, error) {
-	// Set a concurrency limiter to avoid overloading the presidio service
-	s.concurrencyLimiter <- struct{}{}
-	defer func() { <-s.concurrencyLimiter }()
-
-	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(payload))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %v", err)
-	}
-
-	for key, value := range headers {
-		req.Header.Set(key, value)
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute HTTP request: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
-		return nil, fmt.Errorf("service returned status code %d", resp.StatusCode)
-	}
-
-	return resp, nil
-}
-
-type PresidioAnalyzerRequest struct {
-	Text           string   `json:"text"`
-	Language       string   `json:"language"`
-	ScoreThreshold float64  `json:"score_threshold,omitempty"`
-	Entities       []string `json:"entities,omitempty"`
-	Context        []string `json:"context,omitempty"`
-}
-
-type PresidioAnalyzerResponse struct {
-	Start      int     `json:"start"`
-	End        int     `json:"end"`
-	Score      float64 `json:"score"`
-	EntityType string  `json:"entity_type"`
-}
-
-type PresidioAnonymizerRequest struct {
-	Text            string                        `json:"text,omitempty"`
-	Anonymizers     map[string]PresidioAnonymizer `json:"anonymizers,omitempty"`
-	AnalyzerResults []PresidioAnalyzerResponse    `json:"analyzer_results,omitempty"`
-}
-
-type PresidioAnonymizer struct {
-	Type        string `json:"type"`
-	NewValue    string `json:"new_value,omitempty"`
-	MaskingChar string `json:"masking_char,omitempty"`
-	CharsToMask int    `json:"chars_to_mask,omitempty"`
-	FromEnd     bool   `json:"from_end,omitempty"`
-	HashType    string `json:"hash_type,omitempty"`
-	Key         string `json:"key,omitempty"`
-}
-
-type PresidioAnonymizerResponse struct {
-	Operation  string `json:"operation,omitempty"`
-	EntityType string `json:"entity_type"`
-	Start      int    `json:"start"`
-	End        int    `json:"end"`
-	Text       string `json:"text,omitempty"`
 }

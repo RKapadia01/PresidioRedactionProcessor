@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image With Presidio
 
 on:
   push:
@@ -26,9 +26,9 @@ jobs:
           # Path to the directory containing your Dockerfile
           context: .
           # Specify the path to your Dockerfile relative to the repository root
-          file: docker/CollectorOnly.local.Dockerfile
+          file: docker/CollectorWithPresidio.local.Dockerfile
           platforms: linux/amd64
           push: true # set to false if you only want to build without pushing
           tags: |
-            rohankapadia/presidioredactioncollector:latest
-            rohankapadia/presidioredactioncollector:${{ github.sha }}
+            rohankapadia/presidioredactioncollector:withpresidio
+            rohankapadia/presidioredactioncollector:withpresidio-${{ github.sha }}

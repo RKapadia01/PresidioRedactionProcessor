@@ -27,7 +27,7 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &PresidioRedactionProcessorConfig{}
 }
 
 func createTracesProcessor(
@@ -36,7 +36,7 @@ func createTracesProcessor(
 	cfg component.Config,
 	next consumer.Traces,
 ) (processor.Traces, error) {
-	oCfg := cfg.(*Config)
+	oCfg := cfg.(*PresidioRedactionProcessorConfig)
 
 	presidioRedaction := newPresidioTraceRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
@@ -55,7 +55,7 @@ func createLogsProcessor(
 	cfg component.Config,
 	next consumer.Logs,
 ) (processor.Logs, error) {
-	oCfg := cfg.(*Config)
+	oCfg := cfg.(*PresidioRedactionProcessorConfig)
 
 	presidioRedaction := newPresidioLogRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
