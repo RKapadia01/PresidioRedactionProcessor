@@ -4,6 +4,7 @@
 package presidioredactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
 import (
+	"errors"
 	"strings"
 )
 
@@ -17,14 +18,16 @@ func isStringGRPCUrl(endpoint string) bool {
 
 type PresidioRedactionProcessorConfig struct {
 	PresidioServiceConfig PresidioServiceConfig `mapstructure:"presidio_service"`
-	AnalyzerConfig        AnalyzerConfig   	    `mapstructure:"analyzer"`
-	AnonymizerConfig      AnonymizerConfig 	    `mapstructure:"anonymizer,omitempty"`
+	AnalyzerConfig        AnalyzerConfig        `mapstructure:"analyzer"`
+	AnonymizerConfig      AnonymizerConfig      `mapstructure:"anonymizer,omitempty"`
 }
 
 type PresidioServiceConfig struct {
-	AnalyzerEndpoint    string `mapstructure:"analyzer_endpoint"`
-	AnonymizerEndpoint  string `mapstructure:"anonymizer_endpoint"`
-	ConcurrencyLimit    int    `mapstructure:"concurrency_limit,omitempty"`
+	AnalyzerEndpoint   string   `mapstructure:"analyzer_endpoint"`
+	AnonymizerEndpoint string   `mapstructure:"anonymizer_endpoint"`
+	ConcurrencyLimit   int      `mapstructure:"concurrency_limit,omitempty"`
+	TraceConditions    []string `mapstructure:"process_trace_if,omitempty"`
+	LogConditions      []string `mapstructure:"process_log_if,omitempty"`
 }
 
 type AnalyzerConfig struct {
@@ -47,4 +50,15 @@ type EntityAnonymizer struct {
 	FromEnd     bool   `mapstructure:"from_end,omitempty"`
 	HashType    string `mapstructure:"hash_type,omitempty"`
 	Key         string `mapstructure:"key,omitempty"`
+}
+
+func (c *PresidioServiceConfig) validate() error {
+	if c.AnalyzerEndpoint == "" {
+		return errors.New("analyzer_endpoint is required")
+	}
+	if c.AnonymizerEndpoint == "" {
+		return errors.New("anonymizer_endpoint is required")
+	}
+
+	return nil
 }

@@ -23,8 +23,12 @@ processors:
     anonymizer:
       anonymizers:
         - entity: "DEFAULT"
-          type: "HASH"
-          hash_type: "sha256"
+          type: "REPLACE"
+          new_value: "REDACTED"
+    process_trace_if:
+      - 'resource.attributes["service.name"] == "python-tracing-sample" and attributes["contains_pii"] == true'
+    process_log_if:
+      - 'resource.attributes["service.name"] == "python-tracing-sample" and severity_text == "INFO"'
 
 exporters:
   debug:
