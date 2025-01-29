@@ -21,7 +21,7 @@ func TestCallPresidioAnalyzer(t *testing.T) {
 		err := json.NewDecoder(r.Body).Decode(&request)
 		assert.NoError(t, err)
 
-		response := []PresidioAnalyzerResponse{
+		response := []*PresidioAnalyzerResponse{
 			{EntityType: "PERSON", Start: 0, End: 5, Score: 0.85},
 		}
 		w.WriteHeader(http.StatusOK)
@@ -31,13 +31,15 @@ func TestCallPresidioAnalyzer(t *testing.T) {
 
 	// Initialize the processor
 	logger, _ := zap.NewProduction()
-	config := &Config{
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint: mockServer.URL,
+		},
 		AnalyzerConfig: AnalyzerConfig{
 			ScoreThreshold: 0.5,
 			Entities:       []string{"PERSON"},
 			Context:        []string{"context"},
 		},
-		AnalyzerEndpoint: mockServer.URL,
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
@@ -54,8 +56,10 @@ func TestCallPresidioAnalyzer(t *testing.T) {
 
 func TestCallPresidioAnalyzer_HTTPRequestError(t *testing.T) {
 	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnalyzerEndpoint: "http://invalid-url",
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint: "http://invalid-url",
+		},
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
@@ -78,8 +82,10 @@ func TestCallPresidioAnalyzer_NonOKStatusCode(t *testing.T) {
 
 	// Initialize the processor
 	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnalyzerEndpoint: mockServer.URL,
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint: mockServer.URL,
+		},
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
@@ -103,8 +109,10 @@ func TestCallPresidioAnalyzer_JSONDecodeError(t *testing.T) {
 
 	// Initialize the processor
 	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnalyzerEndpoint: mockServer.URL,
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint: mockServer.URL,
+		},
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
@@ -128,7 +136,7 @@ func TestCallPresidioAnonymizer(t *testing.T) {
 		err := json.NewDecoder(r.Body).Decode(&request)
 		assert.NoError(t, err)
 
-		response := PresidioAnonymizerResponse{
+		response := &PresidioAnonymizerResponse{
 			Text: "*****",
 		}
 		w.WriteHeader(http.StatusOK)
@@ -138,7 +146,10 @@ func TestCallPresidioAnonymizer(t *testing.T) {
 
 	// Initialize the processor
 	logger, _ := zap.NewProduction()
-	config := &Config{
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnonymizerEndpoint: mockServer.URL,
+		},
 		AnonymizerConfig: AnonymizerConfig{
 			Anonymizers: []EntityAnonymizer{
 				{
@@ -153,14 +164,13 @@ func TestCallPresidioAnonymizer(t *testing.T) {
 				},
 			},
 		},
-		AnonymizerEndpoint: mockServer.URL,
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
 	// Call the function
 	ctx := context.Background()
 	value := "John Doe"
-	analyzerResults := []PresidioAnalyzerResponse{
+	analyzerResults := []*PresidioAnalyzerResponse{
 		{EntityType: "PERSON", Start: 0, End: 5, Score: 0.85},
 	}
 	response, err := processor.callPresidioAnonymizer(ctx, value, analyzerResults)
@@ -172,15 +182,17 @@ func TestCallPresidioAnonymizer(t *testing.T) {
 
 func TestCallPresidioAnonymizer_HTTPRequestError(t *testing.T) {
 	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnonymizerEndpoint: "http://invalid-url",
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnonymizerEndpoint: "http://invalid-url",
+		},
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
 	// Call the function
 	ctx := context.Background()
 	value := "John Doe"
-	analyzerResults := []PresidioAnalyzerResponse{}
+	analyzerResults := []*PresidioAnalyzerResponse{}
 	_, err := processor.callPresidioAnonymizer(ctx, value, analyzerResults)
 
 	// Assertions
@@ -197,15 +209,17 @@ func TestCallPresidioAnonymizer_NonOKStatusCode(t *testing.T) {
 
 	// Initialize the processor
 	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnonymizerEndpoint: mockServer.URL,
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnonymizerEndpoint: mockServer.URL,
+		},
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
 	// Call the function
 	ctx := context.Background()
 	value := "John Doe"
-	analyzerResults := []PresidioAnalyzerResponse{}
+	analyzerResults := []*PresidioAnalyzerResponse{}
 	_, err := processor.callPresidioAnonymizer(ctx, value, analyzerResults)
 
 	// Assertions
@@ -223,15 +237,17 @@ func TestCallPresidioAnonymizer_JSONDecodeError(t *testing.T) {
 
 	// Initialize the processor
 	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnonymizerEndpoint: mockServer.URL,
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnonymizerEndpoint: mockServer.URL,
+		},
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
 	// Call the function
 	ctx := context.Background()
 	value := "John Doe"
-	analyzerResults := []PresidioAnalyzerResponse{}
+	analyzerResults := []*PresidioAnalyzerResponse{}
 	_, err := processor.callPresidioAnonymizer(ctx, value, analyzerResults)
 
 	// Assertions
