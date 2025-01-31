@@ -139,3 +139,54 @@ func TestCallPresidioAnonymizerJSONDecodeError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid character")
 }
+
+func TestCallPresidioAnonymizer_DifferentAnonymizerTypes(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request PresidioAnonymizerRequest
+		err := json.NewDecoder(r.Body).Decode(&request)
+		assert.NoError(t, err)
+
+		// Verify different anonymizer types
+		assert.Equal(t, "mask", request.Anonymizers["PERSON"].Type)
+		assert.Equal(t, "hash", request.Anonymizers["EMAIL"].Type)
+
+		response := &PresidioAnonymizerResponse{
+			Text: "***** abc123",
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer mockServer.Close()
+
+	logger, _ := zap.NewProduction()
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnonymizerEndpoint: mockServer.URL,
+		},
+		AnonymizerConfig: AnonymizerConfig{
+			Anonymizers: []EntityAnonymizer{
+				{
+					Entity:      "PERSON",
+					Type:        "mask",
+					MaskingChar: "*",
+				},
+				{
+					Entity:   "EMAIL",
+					Type:     "hash",
+					HashType: "md5",
+				},
+			},
+		},
+	}
+	processor := newPresidioRedaction(context.Background(), config, logger)
+
+	ctx := context.Background()
+	analyzerResults := []*PresidioAnalyzerResponse{
+		{EntityType: "PERSON", Start: 0, End: 8, Score: 0.85},
+		{EntityType: "EMAIL", Start: 9, End: 25, Score: 0.9},
+	}
+
+	response, err := processor.callPresidioAnonymizer(ctx, "John Doe john@example.com", analyzerResults)
+	assert.NoError(t, err)
+	assert.Equal(t, "***** abc123", response.Text)
+}
