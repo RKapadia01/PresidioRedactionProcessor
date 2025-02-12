@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -124,4 +127,90 @@ func TestCallPresidioAnalyzerJSONDecodeError(t *testing.T) {
 	// Assertions
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid character")
+}
+
+func TestCallPresidioAnalyzer_ValidateConfig(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request PresidioAnalyzerRequest
+		err := json.NewDecoder(r.Body).Decode(&request)
+		assert.NoError(t, err)
+
+		// Verify request contains config values
+		assert.Equal(t, 0.7, request.ScoreThreshold)
+		assert.Equal(t, []string{"PERSON"}, request.Entities)
+		assert.Equal(t, []string{"context"}, request.Context)
+
+		response := []*PresidioAnalyzerResponse{}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer mockServer.Close()
+
+	logger, _ := zap.NewProduction()
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint: mockServer.URL,
+		},
+		AnalyzerConfig: AnalyzerConfig{
+			ScoreThreshold: 0.7,
+			Entities:       []string{"PERSON"},
+			Context:        []string{"context"},
+		},
+	}
+	processor := newPresidioRedaction(context.Background(), config, logger)
+
+	ctx := context.Background()
+	_, err := processor.callPresidioAnalyzer(ctx, "John Doe")
+	assert.NoError(t, err) // Throw no error since the config matches
+}
+
+func TestProcessor_RespectsMaxConcurrentRequests(t *testing.T) {
+	// Mock server with deliberate delay
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := []*PresidioAnalyzerResponse{}
+		time.Sleep(100 * time.Millisecond) // Ensure requests overlap
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer mockServer.Close()
+
+	logger, _ := zap.NewProduction()
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint: mockServer.URL,
+			ConcurrencyLimit: 2,
+		},
+	}
+	processor := newPresidioRedaction(context.Background(), config, logger)
+
+	var wg sync.WaitGroup
+	var concurrent int32
+	var maxConcurrent int32
+
+	// Launch requests
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			processor.concurrencyLimiter <- struct{}{}        // Acquire semaphore and block if full
+			defer func() { <-processor.concurrencyLimiter }() // Ensures release
+
+			// Track concurrent executions
+			currCount := atomic.AddInt32(&concurrent, 1)
+			if currCount > atomic.LoadInt32(&maxConcurrent) {
+				atomic.StoreInt32(&maxConcurrent, currCount)
+			}
+
+			// Simulate work
+			time.Sleep(50 * time.Millisecond)
+
+			// Decrement count
+			atomic.AddInt32(&concurrent, -1)
+		}()
+	}
+
+	wg.Wait()
+	assert.LessOrEqual(t, atomic.LoadInt32(&maxConcurrent), int32(2),
+		"Concurrent requests exceeded limit")
 }
