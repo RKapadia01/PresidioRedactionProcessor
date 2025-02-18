@@ -24,4 +24,5 @@ COPY ./docker/config.yaml .
 
 EXPOSE 4317 4318
 
-CMD ["./otel-collector", "--config", "/app/config.yaml"]
+ENTRYPOINT ["./otel-collector"]
+CMD ["--config", "/app/config.yaml"]

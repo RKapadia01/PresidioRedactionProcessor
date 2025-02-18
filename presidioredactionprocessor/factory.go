@@ -38,6 +38,12 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*PresidioRedactionProcessorConfig)
 
+	if err := oCfg.validate(); err != nil {
+		return nil, err
+	}
+
+	configurePresidioEndpoints(oCfg)
+
 	presidioRedaction := newPresidioTraceRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
 	return processorhelper.NewTraces(
@@ -57,6 +63,12 @@ func createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*PresidioRedactionProcessorConfig)
 
+	if err := oCfg.validate(); err != nil {
+		return nil, err
+	}
+
+	configurePresidioEndpoints(oCfg)
+
 	presidioRedaction := newPresidioLogRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
 	return processorhelper.NewLogs(
@@ -66,4 +78,11 @@ func createLogsProcessor(
 		next,
 		presidioRedaction.processLogs,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+}
+
+func configurePresidioEndpoints(cfg *PresidioRedactionProcessorConfig) {
+	if cfg.PresidioRunMode == "embedded" {
+		cfg.PresidioServiceConfig.AnalyzerEndpoint = "grpc://localhost:50051"
+		cfg.PresidioServiceConfig.AnonymizerEndpoint = "grpc://localhost:50052"
+	}
 }

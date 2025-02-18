@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	
+
 	"google.golang.org/grpc"
 )
 
@@ -55,4 +55,3 @@ func (s *presidioRedaction) callPresidioAnalyzerAndAnonymizer(ctx context.Contex
 
 	return *response, nil
 }
-
