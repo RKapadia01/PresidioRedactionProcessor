@@ -17,14 +17,15 @@ func isStringGRPCUrl(endpoint string) bool {
 }
 
 type PresidioRedactionProcessorConfig struct {
+	PresidioRunMode       string                `mapstructure:"mode,omitempty" default:"embedded"`
 	PresidioServiceConfig PresidioServiceConfig `mapstructure:"presidio_service"`
 	AnalyzerConfig        AnalyzerConfig        `mapstructure:"analyzer"`
 	AnonymizerConfig      AnonymizerConfig      `mapstructure:"anonymizer,omitempty"`
 }
 
 type PresidioServiceConfig struct {
-	AnalyzerEndpoint   string   `mapstructure:"analyzer_endpoint"`
-	AnonymizerEndpoint string   `mapstructure:"anonymizer_endpoint"`
+	AnalyzerEndpoint   string   `mapstructure:"analyzer_endpoint" default:"grpc://localhost:50051"`
+	AnonymizerEndpoint string   `mapstructure:"anonymizer_endpoint" default:"grpc://localhost:50052"`
 	ConcurrencyLimit   int      `mapstructure:"concurrency_limit,omitempty"`
 	TraceConditions    []string `mapstructure:"process_trace_if,omitempty"`
 	LogConditions      []string `mapstructure:"process_log_if,omitempty"`
@@ -52,12 +53,14 @@ type EntityAnonymizer struct {
 	Key         string `mapstructure:"key,omitempty"`
 }
 
-func (c *PresidioServiceConfig) validate() error {
-	if c.AnalyzerEndpoint == "" {
-		return errors.New("analyzer_endpoint is required")
-	}
-	if c.AnonymizerEndpoint == "" {
-		return errors.New("anonymizer_endpoint is required")
+func (c *PresidioRedactionProcessorConfig) validate() error {
+	if c.PresidioRunMode == "service" {
+		if c.PresidioServiceConfig.AnalyzerEndpoint == "" {
+			return errors.New("presidio_service.analyzer_endpoint is required when mode is external")
+		}
+		if c.PresidioServiceConfig.AnonymizerEndpoint == "" {
+			return errors.New("presidio_service.anonymizer_endpoint is required when mode is external")
+		}
 	}
 
 	return nil
