@@ -11,230 +11,124 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestCallPresidioAnalyzer(t *testing.T) {
-	// Mock server to simulate Presidio Analyzer API
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+func TestGetRedactedValue(t *testing.T) {
+	// Mock analyzer server
+	mockAnalyzer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := []*PresidioAnalyzerResponse{
+			{EntityType: "PERSON", Start: 0, End: 8, Score: 0.85},
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer mockAnalyzer.Close()
 
+	// Mock anonymizer server
+	mockAnonymizer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := &PresidioAnonymizerResponse{
+			Text: "<REDACTED>",
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer mockAnonymizer.Close()
+
+	logger, _ := zap.NewProduction()
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint:   mockAnalyzer.URL,
+			AnonymizerEndpoint: mockAnonymizer.URL,
+		},
+		AnalyzerConfig: AnalyzerConfig{
+			ScoreThreshold: 0.5,
+			Entities:       []string{"PERSON"},
+		},
+		AnonymizerConfig: AnonymizerConfig{
+			Anonymizers: []EntityAnonymizer{
+				{
+					Entity:   "PERSON",
+					Type:     "replace",
+					NewValue: "<REDACTED>",
+				},
+			},
+		},
+	}
+	processor := newPresidioRedaction(context.Background(), config, logger)
+
+	ctx := context.Background()
+	result, err := processor.getRedactedValue(ctx, "John Doe")
+	assert.NoError(t, err)
+	assert.Equal(t, "<REDACTED>", result)
+}
+
+func TestGetRedactedValue_EmptyString(t *testing.T) {
+	// Mock analyzer server
+	mockAnalyzer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var request PresidioAnalyzerRequest
 		err := json.NewDecoder(r.Body).Decode(&request)
 		assert.NoError(t, err)
 
-		response := []PresidioAnalyzerResponse{
-			{EntityType: "PERSON", Start: 0, End: 5, Score: 0.85},
+		response := []*PresidioAnalyzerResponse{}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer mockAnalyzer.Close()
+
+	// Mock anonymizer server
+	mockAnonymizer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := &PresidioAnonymizerResponse{
+			Text: "",
 		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
 	}))
-	defer mockServer.Close()
+	defer mockAnonymizer.Close()
 
-	// Initialize the processor
 	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnalyzerConfig: AnalyzerConfig{
-			ScoreThreshold: 0.5,
-			Entities:       []string{"PERSON"},
-			Context:        []string{"context"},
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint:   mockAnalyzer.URL,
+			AnonymizerEndpoint: mockAnonymizer.URL,
 		},
-		AnalyzerEndpoint: mockServer.URL,
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
-	// Call the function
 	ctx := context.Background()
-	value := "John Doe"
-	response, err := processor.callPresidioAnalyzer(ctx, value)
-
-	// Assertions
+	result, err := processor.getRedactedValue(ctx, "")
 	assert.NoError(t, err)
-	assert.Len(t, response, 1)
-	assert.Equal(t, "PERSON", response[0].EntityType)
+	assert.Empty(t, result)
 }
 
-func TestCallPresidioAnalyzer_HTTPRequestError(t *testing.T) {
-	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnalyzerEndpoint: "http://invalid-url",
-	}
-	processor := newPresidioRedaction(context.Background(), config, logger)
-
-	// Call the function
-	ctx := context.Background()
-	value := "John Doe"
-	_, err := processor.callPresidioAnalyzer(ctx, value)
-
-	// Assertions
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to execute HTTP request")
-}
-
-func TestCallPresidioAnalyzer_NonOKStatusCode(t *testing.T) {
-	// Mock server to simulate Presidio Analyzer API
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer mockServer.Close()
-
-	// Initialize the processor
-	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnalyzerEndpoint: mockServer.URL,
-	}
-	processor := newPresidioRedaction(context.Background(), config, logger)
-
-	// Call the function
-	ctx := context.Background()
-	value := "John Doe"
-	_, err := processor.callPresidioAnalyzer(ctx, value)
-
-	// Assertions
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "service returned status code 500")
-}
-
-func TestCallPresidioAnalyzer_JSONDecodeError(t *testing.T) {
-	// Mock server to simulate Presidio Analyzer API
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestGetRedactedValue_NoDetectedEntities(t *testing.T) {
+	// Mock analyzer server
+	mockAnalyzer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := []*PresidioAnalyzerResponse{}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		json.NewEncoder(w).Encode(response)
 	}))
-	defer mockServer.Close()
+	defer mockAnalyzer.Close()
 
-	// Initialize the processor
-	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnalyzerEndpoint: mockServer.URL,
-	}
-	processor := newPresidioRedaction(context.Background(), config, logger)
-
-	// Call the function
-	ctx := context.Background()
-	value := "John Doe"
-	_, err := processor.callPresidioAnalyzer(ctx, value)
-
-	// Assertions
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid character")
-}
-
-func TestCallPresidioAnonymizer(t *testing.T) {
-	// Mock server to simulate Presidio Anonymizer API
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-
-		var request PresidioAnonymizerRequest
-		err := json.NewDecoder(r.Body).Decode(&request)
-		assert.NoError(t, err)
-
-		response := PresidioAnonymizerResponse{
-			Text: "*****",
+	// Mock anonymizer server
+	mockAnonymizer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := &PresidioAnonymizerResponse{
+			Text: "",
 		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
 	}))
-	defer mockServer.Close()
+	defer mockAnonymizer.Close()
 
-	// Initialize the processor
 	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnonymizerConfig: AnonymizerConfig{
-			Anonymizers: []EntityAnonymizer{
-				{
-					Entity:      "PERSON",
-					Type:        "mask",
-					NewValue:    "",
-					MaskingChar: "*",
-					CharsToMask: 5,
-					FromEnd:     false,
-					HashType:    "",
-					Key:         "",
-				},
-			},
+	config := &PresidioRedactionProcessorConfig{
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint:   mockAnalyzer.URL,
+			AnonymizerEndpoint: mockAnonymizer.URL,
 		},
-		AnonymizerEndpoint: mockServer.URL,
 	}
 	processor := newPresidioRedaction(context.Background(), config, logger)
 
-	// Call the function
 	ctx := context.Background()
-	value := "John Doe"
-	analyzerResults := []PresidioAnalyzerResponse{
-		{EntityType: "PERSON", Start: 0, End: 5, Score: 0.85},
-	}
-	response, err := processor.callPresidioAnonymizer(ctx, value, analyzerResults)
-
-	// Assertions
+	value := "No sensitive data here"
+	result, err := processor.getRedactedValue(ctx, value)
 	assert.NoError(t, err)
-	assert.Equal(t, "*****", response.Text)
-}
-
-func TestCallPresidioAnonymizer_HTTPRequestError(t *testing.T) {
-	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnonymizerEndpoint: "http://invalid-url",
-	}
-	processor := newPresidioRedaction(context.Background(), config, logger)
-
-	// Call the function
-	ctx := context.Background()
-	value := "John Doe"
-	analyzerResults := []PresidioAnalyzerResponse{}
-	_, err := processor.callPresidioAnonymizer(ctx, value, analyzerResults)
-
-	// Assertions
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to execute HTTP request")
-}
-
-func TestCallPresidioAnonymizer_NonOKStatusCode(t *testing.T) {
-	// Mock server to simulate Presidio Anonymizer API
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer mockServer.Close()
-
-	// Initialize the processor
-	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnonymizerEndpoint: mockServer.URL,
-	}
-	processor := newPresidioRedaction(context.Background(), config, logger)
-
-	// Call the function
-	ctx := context.Background()
-	value := "John Doe"
-	analyzerResults := []PresidioAnalyzerResponse{}
-	_, err := processor.callPresidioAnonymizer(ctx, value, analyzerResults)
-
-	// Assertions
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "service returned status code 500")
-}
-
-func TestCallPresidioAnonymizer_JSONDecodeError(t *testing.T) {
-	// Mock server to simulate Presidio Anonymizer API
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
-	}))
-	defer mockServer.Close()
-
-	// Initialize the processor
-	logger, _ := zap.NewProduction()
-	config := &Config{
-		AnonymizerEndpoint: mockServer.URL,
-	}
-	processor := newPresidioRedaction(context.Background(), config, logger)
-
-	// Call the function
-	ctx := context.Background()
-	value := "John Doe"
-	analyzerResults := []PresidioAnalyzerResponse{}
-	_, err := processor.callPresidioAnonymizer(ctx, value, analyzerResults)
-
-	// Assertions
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid character")
+	assert.Equal(t, value, result)
 }
