@@ -38,7 +38,7 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*PresidioRedactionProcessorConfig)
 
-	presidioRedaction := newPresidioRedaction(ctx, oCfg, set.Logger)
+	presidioRedaction := newPresidioTraceRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
 	return processorhelper.NewTraces(
 		ctx,
@@ -57,7 +57,7 @@ func createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*PresidioRedactionProcessorConfig)
 
-	presidioRedaction := newPresidioRedaction(ctx, oCfg, set.Logger)
+	presidioRedaction := newPresidioLogRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
 	return processorhelper.NewLogs(
 		ctx,
