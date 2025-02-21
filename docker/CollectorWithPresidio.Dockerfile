@@ -21,9 +21,12 @@ WORKDIR /app
 
 COPY ./presidio_grpc_wrapper/requirements.txt /app
 
+RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
+
 RUN conda install -c conda-forge spacy && \
-  pip install -r requirements.txt && \
-  python -m spacy download en_core_web_lg
+  python -m spacy download en_core_web_lg && \
+  pip install "presidio_analyzer[transformers]" && \
+  pip install -r requirements.txt
 
 COPY --from=builder /app/_build/otelcol-presidio ./otel-collector
 COPY ./docker/config.yaml .
