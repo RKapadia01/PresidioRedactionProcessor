@@ -8,9 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
-	
-	"google.golang.org/grpc"
+
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -23,11 +21,8 @@ func (s *presidioRedaction) callPresidioAnalyzer(ctx context.Context, value stri
 		Context:        s.config.AnalyzerConfig.Context,
 	}
 
-	if (isStringHTTPUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint)) {
+	if isStringHTTPUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint) {
 		return s.callPresidioAnalyzerHTTP(ctx, requestPayload)
-	}
-	if (isStringGRPCUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint)) {
-		return s.callPresidioAnalyzerGRPC(ctx, requestPayload)
 	}
 
 	return []*PresidioAnalyzerResponse{}, fmt.Errorf("invalid analyzer endpoint: %s", s.config.PresidioServiceConfig.AnalyzerEndpoint)
@@ -35,7 +30,7 @@ func (s *presidioRedaction) callPresidioAnalyzer(ctx context.Context, value stri
 
 func (s *presidioRedaction) callPresidioAnalyzerHTTP(ctx context.Context, requestPayload PresidioAnalyzerRequest) ([]*PresidioAnalyzerResponse, error) {
 	opts := protojson.MarshalOptions{
-		UseProtoNames: true,
+		UseProtoNames:     true,
 		EmitDefaultValues: true,
 	}
 	jsonPayload, err := opts.Marshal(&requestPayload)
@@ -56,27 +51,8 @@ func (s *presidioRedaction) callPresidioAnalyzerHTTP(ctx context.Context, reques
 	var presidioAnalyzerResponse []*PresidioAnalyzerResponse
 	err = json.NewDecoder(resp.Body).Decode(&presidioAnalyzerResponse)
 	if err != nil {
-		return []*PresidioAnalyzerResponse{}, err
+		return []*PresidioAnalyzerResponse{}, fmt.Errorf("failed to unmarshal response payload: %v", err)
 	}
 
 	return presidioAnalyzerResponse, nil
 }
-
-func (s *presidioRedaction) callPresidioAnalyzerGRPC(ctx context.Context, requestPayload PresidioAnalyzerRequest) ([]*PresidioAnalyzerResponse, error) {
-	connStr := strings.TrimPrefix(s.config.PresidioServiceConfig.AnalyzerEndpoint, "grpc://")
-	conn, err := grpc.Dial(connStr, grpc.WithInsecure())
-	if err != nil {
-		return []*PresidioAnalyzerResponse{}, fmt.Errorf("failed to dial gRPC server: %v", err)
-	}
-
-	client := NewPresidioRedactionProcessorClient(conn)
-	defer conn.Close()
-
-	response, err := client.Analyze(ctx, &requestPayload)
-	if err != nil {
-		return []*PresidioAnalyzerResponse{}, fmt.Errorf("failed to call gRPC server: %v", err)
-	}
-
-	return response.AnalyzerResults, nil
-}
-
