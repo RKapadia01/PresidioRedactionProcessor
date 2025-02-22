@@ -5,12 +5,14 @@ package presidioredactionprocessor
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -87,24 +89,53 @@ func newPresidioTraceRedaction(ctx context.Context, cfg *PresidioRedactionProces
 }
 
 func (s *presidioRedaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptrace.Traces, error) {
+	var errs error
 	for i := 0; i < batch.ResourceSpans().Len(); i++ {
 		rs := batch.ResourceSpans().At(i)
-		s.processResourceSpan(ctx, rs)
+		resourceSpanErr := s.processResourceSpan(ctx, rs)
+		if resourceSpanErr != nil {
+			errs = multierr.Append(errs, fmt.Errorf("error processing resource span: %w", resourceSpanErr))
+		}
+	}
+
+	if errs != nil {
+		switch s.config.ErrorMode {
+		case ottl.IgnoreError:
+			s.logger.Error("failed to process traces", zap.Error(errs))
+			return batch, nil
+		case ottl.PropagateError:
+			s.logger.Error("failed to process traces", zap.Error(errs))
+			return batch, errs
+		}
 	}
 
 	return batch, nil
 }
 
 func (s *presidioRedaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
+	var errs error
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
-		s.processResourceLog(ctx, rl)
+		resouceLogErr := s.processResourceLog(ctx, rl)
+		if resouceLogErr != nil {
+			errs = multierr.Append(errs, fmt.Errorf("error processing resource log: %w", resouceLogErr))
+		}
+	}
+
+	if errs != nil {
+		switch s.config.ErrorMode {
+		case ottl.IgnoreError:
+			s.logger.Error("failed to process logs", zap.Error(errs))
+		case ottl.PropagateError:
+			s.logger.Error("failed to process logs", zap.Error(errs))
+		}
 	}
 
 	return logs, nil
 }
 
-func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) {
+func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) error {
+	var errs error
 	for j := 0; j < rl.ScopeLogs().Len(); j++ {
 		ils := rl.ScopeLogs().At(j)
 		for k := 0; k < ils.LogRecords().Len(); k++ {
@@ -120,9 +151,9 @@ func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.Reso
 			)
 
 			for _, condition := range s.logConditions {
-				matches, err := condition.Eval(ctx, lCtx)
-				if err != nil {
-					s.logger.Error("Error evaluating log condition", zap.Error(err))
+				matches, logCdnErr := condition.Eval(ctx, lCtx)
+				if logCdnErr != nil {
+					errs = multierr.Append(errs, fmt.Errorf("error evaluating log condition: %w", logCdnErr))
 					continue
 				}
 				if matches {
@@ -135,7 +166,10 @@ func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.Reso
 				continue
 			}
 
-			s.processAttribute(ctx, log.Attributes())
+			attrErr := s.processAttribute(ctx, log.Attributes())
+			if attrErr != nil {
+				errs = multierr.Append(errs, fmt.Errorf("error processing log attributes: %w", attrErr))
+			}
 
 			logBodyStr := log.Body().Str()
 
@@ -143,20 +177,25 @@ func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.Reso
 				continue
 			}
 
-			redactedBody, err := s.getRedactedValue(ctx, logBodyStr)
-			if err != nil {
-				s.logger.Error("Error calling presidio service", zap.Error(err))
+			redactedBody, redactionErr := s.getRedactedValue(ctx, logBodyStr)
+			if redactionErr != nil {
+				errs = multierr.Append(errs, fmt.Errorf("error redacting log body: %w", redactionErr))
 				continue
 			}
 
 			log.Body().SetStr(redactedBody)
 		}
 	}
+	return errs
 }
 
-func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
+func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) error {
+	var errs error
 	rsAttrs := rs.Resource().Attributes()
-	s.processAttribute(ctx, rsAttrs)
+	rsAttrsErr := s.processAttribute(ctx, rsAttrs)
+	if rsAttrsErr != nil {
+		errs = multierr.Append(errs, fmt.Errorf("error processing resource attributes: %w", rsAttrsErr))
+	}
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
@@ -172,9 +211,9 @@ func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.R
 			)
 
 			for _, condition := range s.traceConditions {
-				matches, err := condition.Eval(ctx, tCtx)
-				if err != nil {
-					s.logger.Error("Error evaluating trace condition", zap.Error(err))
+				matches, traceCdnErr := condition.Eval(ctx, tCtx)
+				if traceCdnErr != nil {
+					errs = multierr.Append(errs, fmt.Errorf("error evaluating trace condition: %w", traceCdnErr))
 					continue
 				}
 				if matches {
@@ -188,27 +227,34 @@ func (s *presidioRedaction) processResourceSpan(ctx context.Context, rs ptrace.R
 			}
 
 			spanAttrs := span.Attributes()
-			s.processAttribute(ctx, spanAttrs)
+			spanAttrErr := s.processAttribute(ctx, spanAttrs)
+			if spanAttrErr != nil {
+				errs = multierr.Append(errs, fmt.Errorf("error processing span attributes: %w", spanAttrErr))
+			}
 		}
 	}
+	return errs
 }
 
-func (s *presidioRedaction) processAttribute(ctx context.Context, attributes pcommon.Map) {
+func (s *presidioRedaction) processAttribute(ctx context.Context, attributes pcommon.Map) error {
+	var errs error
 	attributes.Range(func(k string, v pcommon.Value) bool {
 		valueStr := v.Str()
 		if len(valueStr) == 0 {
 			return true
 		}
 
-		redactedValue, err := s.getRedactedValue(ctx, valueStr)
+		redactedValue, redactionErr := s.getRedactedValue(ctx, valueStr)
 
-		if err != nil {
-			s.logger.Error("Error retrieving the redacted value", zap.Error(err))
+		if redactionErr != nil {
+			errs = multierr.Append(errs, fmt.Errorf("error redacting value: %w", redactionErr))
 			return true
 		}
 		attributes.PutStr(k, redactedValue)
 		return true
 	})
+
+	return errs
 }
 
 func (s *presidioRedaction) getRedactedValue(ctx context.Context, value string) (string, error) {

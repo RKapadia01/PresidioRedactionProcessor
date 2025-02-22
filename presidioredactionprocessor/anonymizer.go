@@ -69,7 +69,7 @@ func (s *presidioRedaction) callPresidioAnonymizerHTTP(ctx context.Context, requ
 	var presidioAnonymizerResponse PresidioAnonymizerResponse
 	err = json.NewDecoder(resp.Body).Decode(&presidioAnonymizerResponse)
 	if err != nil {
-		return PresidioAnonymizerResponse{}, err
+		return PresidioAnonymizerResponse{}, fmt.Errorf("failed to unmarshal response payload: %v", err)
 	}
 
 	return presidioAnonymizerResponse, nil

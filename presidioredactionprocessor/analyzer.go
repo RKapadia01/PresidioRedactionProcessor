@@ -8,9 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -36,7 +34,7 @@ func (s *presidioRedaction) callPresidioAnalyzer(ctx context.Context, value stri
 
 func (s *presidioRedaction) callPresidioAnalyzerHTTP(ctx context.Context, requestPayload PresidioAnalyzerRequest) ([]*PresidioAnalyzerResponse, error) {
 	opts := protojson.MarshalOptions{
-		UseProtoNames: true,
+		UseProtoNames:     true,
 		EmitDefaultValues: true,
 	}
 	jsonPayload, err := opts.Marshal(&requestPayload)
@@ -57,7 +55,7 @@ func (s *presidioRedaction) callPresidioAnalyzerHTTP(ctx context.Context, reques
 	var presidioAnalyzerResponse []*PresidioAnalyzerResponse
 	err = json.NewDecoder(resp.Body).Decode(&presidioAnalyzerResponse)
 	if err != nil {
-		return []*PresidioAnalyzerResponse{}, err
+		return []*PresidioAnalyzerResponse{}, fmt.Errorf("failed to unmarshal response payload: %v", err)
 	}
 
 	return presidioAnalyzerResponse, nil
