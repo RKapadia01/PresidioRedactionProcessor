@@ -30,62 +30,45 @@ type presidioRedaction struct {
 	logConditions      []ottl.Condition[ottllog.TransformContext]
 }
 
+func createBaseRedaction(cfg *PresidioRedactionProcessorConfig, logger *zap.Logger) *presidioRedaction {
+	return &presidioRedaction{
+		config:             cfg,
+		logger:             logger,
+		client:             &http.Client{},
+		concurrencyLimiter: make(chan struct{}, cfg.PresidioServiceConfig.ConcurrencyLimit),
+	}
+}
+
 func newPresidioLogRedaction(ctx context.Context, cfg *PresidioRedactionProcessorConfig, settings component.TelemetrySettings, logger *zap.Logger) *presidioRedaction {
+	base := createBaseRedaction(cfg, logger)
+	if base == nil {
+		return nil
+	}
+
 	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
 	if err != nil {
 		logger.Error("Error creating log parser", zap.Error(err))
 		return nil
 	}
 
-	logConditions := make([]ottl.Condition[ottllog.TransformContext], 0, len(cfg.PresidioServiceConfig.TraceConditions))
-
-	for _, condition := range cfg.PresidioServiceConfig.LogConditions {
-		expr, err := logParser.ParseCondition(condition)
-
-		if err != nil {
-			logger.Error("Error parsing log condition", zap.Error(err))
-			continue
-		}
-
-		logConditions = append(logConditions, *expr)
-	}
-
-	return &presidioRedaction{
-		config:             cfg,
-		logger:             logger,
-		client:             &http.Client{},
-		concurrencyLimiter: make(chan struct{}, cfg.PresidioServiceConfig.ConcurrencyLimit),
-		logConditions:      logConditions,
-	}
+	base.logConditions = parseConditions(cfg.PresidioServiceConfig.LogConditions, logParser, logger)
+	return base
 }
 
 func newPresidioTraceRedaction(ctx context.Context, cfg *PresidioRedactionProcessorConfig, settings component.TelemetrySettings, logger *zap.Logger) *presidioRedaction {
-	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings)
+	base := createBaseRedaction(cfg, logger)
+	if base == nil {
+		return nil
+	}
+
+	spanParser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings)
 	if err != nil {
 		logger.Error("Error creating span parser", zap.Error(err))
 		return nil
 	}
 
-	traceConditions := make([]ottl.Condition[ottlspan.TransformContext], 0, len(cfg.PresidioServiceConfig.TraceConditions))
-
-	for _, condition := range cfg.PresidioServiceConfig.TraceConditions {
-		expr, err := parser.ParseCondition(condition)
-
-		if err != nil {
-			logger.Error("Error parsing trace condition", zap.Error(err))
-			continue
-		}
-
-		traceConditions = append(traceConditions, *expr)
-	}
-
-	return &presidioRedaction{
-		config:             cfg,
-		logger:             logger,
-		client:             &http.Client{},
-		concurrencyLimiter: make(chan struct{}, cfg.PresidioServiceConfig.ConcurrencyLimit),
-		traceConditions:    traceConditions,
-	}
+	base.traceConditions = parseConditions(cfg.PresidioServiceConfig.TraceConditions, spanParser, logger)
+	return base
 }
 
 func (s *presidioRedaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptrace.Traces, error) {
@@ -98,17 +81,7 @@ func (s *presidioRedaction) processTraces(ctx context.Context, batch ptrace.Trac
 		}
 	}
 
-	if errs != nil {
-		switch s.config.ErrorMode {
-		case ottl.IgnoreError:
-			s.logger.Error("failed to process traces", zap.Error(errs))
-		case ottl.PropagateError:
-			s.logger.Error("failed to process traces", zap.Error(errs))
-			return batch, errs
-		}
-	}
-
-	return batch, nil
+	return batch, s.handleProcessingError(errs, "traces")
 }
 
 func (s *presidioRedaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
@@ -121,17 +94,7 @@ func (s *presidioRedaction) processLogs(ctx context.Context, logs plog.Logs) (pl
 		}
 	}
 
-	if errs != nil {
-		switch s.config.ErrorMode {
-		case ottl.IgnoreError:
-			s.logger.Error("failed to process logs", zap.Error(errs))
-		case ottl.PropagateError:
-			s.logger.Error("failed to process logs", zap.Error(errs))
-			return logs, errs
-		}
-	}
-
-	return logs, nil
+	return logs, s.handleProcessingError(errs, "logs")
 }
 
 func (s *presidioRedaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) error {
@@ -282,4 +245,31 @@ func (s *presidioRedaction) getRedactedValue(ctx context.Context, value string) 
 	}
 
 	return anonymizerResult.Text, nil
+}
+
+func parseConditions[T any](conditions []string, parser ottl.Parser[T], logger *zap.Logger) []ottl.Condition[T] {
+	parsed := make([]ottl.Condition[T], 0, len(conditions))
+	for _, condition := range conditions {
+		expr, err := parser.ParseCondition(condition)
+		if err != nil {
+			logger.Error("Error parsing condition", zap.Error(err))
+			continue
+		}
+		parsed = append(parsed, *expr)
+	}
+	return parsed
+}
+
+func (s *presidioRedaction) handleProcessingError(err error, operation string) error {
+	if err != nil {
+		switch s.config.ErrorMode {
+		case ottl.IgnoreError:
+			s.logger.Error("failed to process "+operation, zap.Error(err))
+			return nil
+		case ottl.PropagateError:
+			s.logger.Error("failed to process "+operation, zap.Error(err))
+			return err
+		}
+	}
+	return nil
 }
