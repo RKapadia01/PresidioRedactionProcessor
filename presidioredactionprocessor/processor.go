@@ -116,9 +116,9 @@ func (s *presidioRedaction) processLogs(ctx context.Context, logs plog.Logs) (pl
 	var errs error
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
-		resouceLogErr := s.processResourceLog(ctx, rl)
-		if resouceLogErr != nil {
-			errs = multierr.Append(errs, fmt.Errorf("error processing resource log: %w", resouceLogErr))
+		resourceLogErr := s.processResourceLog(ctx, rl)
+		if resourceLogErr != nil {
+			errs = multierr.Append(errs, fmt.Errorf("error processing resource log: %w", resourceLogErr))
 		}
 	}
 
