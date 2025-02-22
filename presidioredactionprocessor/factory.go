@@ -91,6 +91,6 @@ func createLogsProcessor(
 func configurePresidioEndpoints(cfg *PresidioRedactionProcessorConfig) {
 	if cfg.PresidioRunMode == "embedded" {
 		cfg.PresidioServiceConfig.AnalyzerEndpoint = "grpc://localhost:50051"
-		cfg.PresidioServiceConfig.AnonymizerEndpoint = "grpc://localhost:50052"
+		cfg.PresidioServiceConfig.AnonymizerEndpoint = "grpc://localhost:500052"
 	}
 }
