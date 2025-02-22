@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	
+
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -23,12 +23,13 @@ func (s *presidioRedaction) callPresidioAnalyzer(ctx context.Context, value stri
 		Context:        s.config.AnalyzerConfig.Context,
 	}
 
-	if (isStringHTTPUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint)) {
+	if isStringHTTPUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint) {
 		return s.callPresidioAnalyzerHTTP(ctx, requestPayload)
 	}
-	if (isStringGRPCUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint)) {
-		return s.callPresidioAnalyzerGRPC(ctx, requestPayload)
-	}
+
+	// if isStringGRPCUrl(s.config.PresidioServiceConfig.AnalyzerEndpoint) {
+	// 	return s.callPresidioAnalyzerGRPC(ctx, requestPayload)
+	// }
 
 	return []*PresidioAnalyzerResponse{}, fmt.Errorf("invalid analyzer endpoint: %s", s.config.PresidioServiceConfig.AnalyzerEndpoint)
 }
@@ -62,21 +63,20 @@ func (s *presidioRedaction) callPresidioAnalyzerHTTP(ctx context.Context, reques
 	return presidioAnalyzerResponse, nil
 }
 
-func (s *presidioRedaction) callPresidioAnalyzerGRPC(ctx context.Context, requestPayload PresidioAnalyzerRequest) ([]*PresidioAnalyzerResponse, error) {
-	connStr := strings.TrimPrefix(s.config.PresidioServiceConfig.AnalyzerEndpoint, "grpc://")
-	conn, err := grpc.Dial(connStr, grpc.WithInsecure())
-	if err != nil {
-		return []*PresidioAnalyzerResponse{}, fmt.Errorf("failed to dial gRPC server: %v", err)
-	}
+// func (s *presidioRedaction) callPresidioAnalyzerGRPC(ctx context.Context, requestPayload PresidioAnalyzerRequest) ([]*PresidioAnalyzerResponse, error) {
+// 	connStr := strings.TrimPrefix(s.config.PresidioServiceConfig.AnalyzerEndpoint, "grpc://")
+// 	conn, err := grpc.Dial(connStr, grpc.WithInsecure())
+// 	if err != nil {
+// 		return []*PresidioAnalyzerResponse{}, fmt.Errorf("failed to dial gRPC server: %v", err)
+// 	}
 
-	client := NewPresidioRedactionProcessorClient(conn)
-	defer conn.Close()
+// 	client := NewPresidioRedactionProcessorClient(conn)
+// 	defer conn.Close()
 
-	response, err := client.Analyze(ctx, &requestPayload)
-	if err != nil {
-		return []*PresidioAnalyzerResponse{}, fmt.Errorf("failed to call gRPC server: %v", err)
-	}
+// 	response, err := client.Analyze(ctx, &requestPayload)
+// 	if err != nil {
+// 		return []*PresidioAnalyzerResponse{}, fmt.Errorf("failed to call gRPC server: %v", err)
+// 	}
 
-	return response.AnalyzerResults, nil
-}
-
+// 	return response.AnalyzerResults, nil
+// }

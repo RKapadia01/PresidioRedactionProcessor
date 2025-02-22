@@ -6,6 +6,8 @@ package presidioredactionprocessor // import "github.com/open-telemetry/opentele
 import (
 	"errors"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func isStringHTTPUrl(endpoint string) bool {
@@ -18,6 +20,7 @@ func isStringGRPCUrl(endpoint string) bool {
 
 type PresidioRedactionProcessorConfig struct {
 	PresidioRunMode       string                `mapstructure:"mode,omitempty" default:"embedded"`
+	ErrorMode             ottl.ErrorMode        `mapstructure:"error_mode"`
 	PresidioServiceConfig PresidioServiceConfig `mapstructure:"presidio_service"`
 	AnalyzerConfig        AnalyzerConfig        `mapstructure:"analyzer"`
 	AnonymizerConfig      AnonymizerConfig      `mapstructure:"anonymizer,omitempty"`
