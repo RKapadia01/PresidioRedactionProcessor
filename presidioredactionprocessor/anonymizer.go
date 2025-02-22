@@ -38,10 +38,6 @@ func (s *presidioRedaction) callPresidioAnonymizer(ctx context.Context, value st
 		return s.callPresidioAnonymizerHTTP(ctx, requestPayload)
 	}
 
-	// if isStringGRPCUrl(s.config.PresidioServiceConfig.AnonymizerEndpoint) {
-	// 	return s.callPresidioAnonymizerGRPC(ctx, requestPayload)
-	// }
-
 	return PresidioAnonymizerResponse{}, fmt.Errorf("invalid anonymizer endpoint: %s", s.config.PresidioServiceConfig.AnonymizerEndpoint)
 }
 
@@ -74,21 +70,3 @@ func (s *presidioRedaction) callPresidioAnonymizerHTTP(ctx context.Context, requ
 
 	return presidioAnonymizerResponse, nil
 }
-
-// func (s *presidioRedaction) callPresidioAnonymizerGRPC(ctx context.Context, requestPayload PresidioAnonymizerRequest) (PresidioAnonymizerResponse, error) {
-// 	connStr := strings.TrimPrefix(s.config.PresidioServiceConfig.AnonymizerEndpoint, "grpc://")
-// 	conn, err := grpc.Dial(connStr, grpc.WithInsecure())
-// 	if err != nil {
-// 		return PresidioAnonymizerResponse{}, fmt.Errorf("failed to dial gRPC server: %v", err)
-// 	}
-
-// 	client := NewPresidioRedactionProcessorClient(conn)
-// 	defer conn.Close()
-
-// 	response, err := client.Anonymize(ctx, &requestPayload)
-// 	if err != nil {
-// 		return PresidioAnonymizerResponse{}, fmt.Errorf("failed to call gRPC server: %v", err)
-// 	}
-
-// 	return *response, nil
-// }
