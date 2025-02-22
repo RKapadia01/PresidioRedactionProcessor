@@ -102,7 +102,6 @@ func (s *presidioRedaction) processTraces(ctx context.Context, batch ptrace.Trac
 		switch s.config.ErrorMode {
 		case ottl.IgnoreError:
 			s.logger.Error("failed to process traces", zap.Error(errs))
-			return batch, nil
 		case ottl.PropagateError:
 			s.logger.Error("failed to process traces", zap.Error(errs))
 			return batch, errs
@@ -128,6 +127,7 @@ func (s *presidioRedaction) processLogs(ctx context.Context, logs plog.Logs) (pl
 			s.logger.Error("failed to process logs", zap.Error(errs))
 		case ottl.PropagateError:
 			s.logger.Error("failed to process logs", zap.Error(errs))
+			return logs, errs
 		}
 	}
 
