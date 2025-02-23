@@ -4,7 +4,7 @@
 // - protoc             v5.29.3
 // source: presidio.proto
 
-package presidioredactionprocessor
+package presidioclient
 
 import (
 	context "context"

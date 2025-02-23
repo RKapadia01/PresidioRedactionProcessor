@@ -1,21 +1,24 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package presidioredactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
+package presidioclient
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"go.opentelemetry.io/collector/component"
 )
 
-func isStringHTTPUrl(endpoint string) bool {
-	return strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://")
-}
-
-func isStringGRPCUrl(endpoint string) bool {
-	return strings.HasPrefix(endpoint, "grpc://") || strings.HasPrefix(endpoint, "grpcs://")
+func createDefaultConfig() component.Config {
+	return &PresidioRedactionProcessorConfig{
+		PresidioRunMode: "embedded",
+		ErrorMode:       ottl.PropagateError,
+		PresidioServiceConfig: PresidioServiceConfig{
+			AnalyzerEndpoint:   "grpc://localhost:50051",
+			AnonymizerEndpoint: "grpc://localhost:50052",
+		},
+	}
 }
 
 type PresidioRedactionProcessorConfig struct {
