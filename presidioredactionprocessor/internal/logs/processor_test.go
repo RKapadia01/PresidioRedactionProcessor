@@ -39,10 +39,8 @@ func createTestLogs(bodyContent string, attributes map[string]interface{}) plog.
 
 	lr.Body().SetStr(bodyContent)
 
-	if attributes != nil {
-		for k, v := range attributes {
-			setAttributeValue(lr.Attributes(), k, v)
-		}
+	for k, v := range attributes {
+		setAttributeValue(lr.Attributes(), k, v)
 	}
 
 	return logs
