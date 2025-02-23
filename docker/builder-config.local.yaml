@@ -44,7 +44,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.117.0
   # Presidio Redaction Processor
-  - gomod: github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor v0.1.0
+  - gomod: github.com/RKapadia01/presidioredactionprocessor v0.1.0
 
 connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.117.0
@@ -57,4 +57,4 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.23.0
 
 replaces:
-  - github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor => ../presidioredactionprocessor
+  - github.com/RKapadia01/presidioredactionprocessor => ../presidioredactionprocessor

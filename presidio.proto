@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor";
+option go_package = "github.com/RKapadia01/PresidioRedactionProcessor/internal/presidioclient";
 
 service PresidioRedactionProcessor {
   rpc Analyze(PresidioAnalyzerRequest) returns (PresidioAnalyzerResponses) {}

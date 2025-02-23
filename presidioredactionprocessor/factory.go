@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
-	// "github.com/open-telemetry/opentelemetry-collector-contrib/processor/presidioredactionprocessor/internal/metadata"
-	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/metadata"
+	"github.com/RKapadia01/presidioredactionprocessor/internal/logs"
+	"github.com/RKapadia01/presidioredactionprocessor/internal/metadata"
+	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient"
+	"github.com/RKapadia01/presidioredactionprocessor/internal/traces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -28,10 +30,10 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &PresidioRedactionProcessorConfig{
+	return &presidioclient.PresidioRedactionProcessorConfig{
 		PresidioRunMode: "embedded",
 		ErrorMode:       ottl.PropagateError,
-		PresidioServiceConfig: PresidioServiceConfig{
+		PresidioServiceConfig: presidioclient.PresidioServiceConfig{
 			AnalyzerEndpoint:   "grpc://localhost:50051",
 			AnonymizerEndpoint: "grpc://localhost:50052",
 		},
@@ -44,22 +46,23 @@ func createTracesProcessor(
 	cfg component.Config,
 	next consumer.Traces,
 ) (processor.Traces, error) {
-	oCfg := cfg.(*PresidioRedactionProcessorConfig)
+	oCfg := cfg.(*presidioclient.PresidioRedactionProcessorConfig)
 
-	if err := oCfg.validate(); err != nil {
-		return nil, err
-	}
+	//TODO: Fix this
+	// if err := oCfg.validate(); err != nil {
+	// 	return nil, err
+	// }
 
 	configurePresidioEndpoints(oCfg)
 
-	presidioRedaction := newPresidioTraceRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
+	presidioRedaction := traces.NewPresidioTraceRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
 	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
 		next,
-		presidioRedaction.processTraces,
+		presidioRedaction.ProcessTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
@@ -69,26 +72,27 @@ func createLogsProcessor(
 	cfg component.Config,
 	next consumer.Logs,
 ) (processor.Logs, error) {
-	oCfg := cfg.(*PresidioRedactionProcessorConfig)
+	oCfg := cfg.(*presidioclient.PresidioRedactionProcessorConfig)
 
-	if err := oCfg.validate(); err != nil {
-		return nil, err
-	}
+	// TODO: Fix this
+	// if err := oCfg.validate(); err != nil {
+	// 	return nil, err
+	// }
 
 	configurePresidioEndpoints(oCfg)
 
-	presidioRedaction := newPresidioLogRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
+	presidioRedaction := logs.NewPresidioLogRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
 	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		next,
-		presidioRedaction.processLogs,
+		presidioRedaction.ProcessLogs,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func configurePresidioEndpoints(cfg *PresidioRedactionProcessorConfig) {
+func configurePresidioEndpoints(cfg *presidioclient.PresidioRedactionProcessorConfig) {
 	if cfg.PresidioRunMode == "embedded" {
 		cfg.PresidioServiceConfig.AnalyzerEndpoint = "grpc://localhost:50051"
 		cfg.PresidioServiceConfig.AnonymizerEndpoint = "grpc://localhost:500052"
