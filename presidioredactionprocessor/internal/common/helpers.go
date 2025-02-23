@@ -1,4 +1,4 @@
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/common"
+package common
 
 import (
 	"strings"
@@ -7,13 +7,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// ErrorHandler defines an interface for types that can handle processing errors
 type ErrorHandler interface {
 	GetErrorMode() ottl.ErrorMode
 	GetLogger() *zap.Logger
 }
 
-// HandleProcessingError is a generic error handling function
 func HandleProcessingError(handler ErrorHandler, err error, operation string) error {
 	if err != nil {
 		switch handler.GetErrorMode() {

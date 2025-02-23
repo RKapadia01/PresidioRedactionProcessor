@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func createDefaultConfig() component.Config {
+func CreateDefaultConfig() component.Config {
 	return &PresidioRedactionProcessorConfig{
 		PresidioRunMode: "embedded",
 		ErrorMode:       ottl.PropagateError,
@@ -19,11 +19,15 @@ func createDefaultConfig() component.Config {
 			AnalyzerEndpoint:   "grpc://localhost:50051",
 			AnonymizerEndpoint: "grpc://localhost:50052",
 		},
+		AnalyzerConfig: AnalyzerConfig{
+			Language:       "en",
+			ScoreThreshold: 0.5,
+		},
 	}
 }
 
 type PresidioRedactionProcessorConfig struct {
-	PresidioRunMode       string                `mapstructure:"mode,omitempty" default:"embedded"`
+	PresidioRunMode       string                `mapstructure:"mode,omitempty"`
 	ErrorMode             ottl.ErrorMode        `mapstructure:"error_mode"`
 	PresidioServiceConfig PresidioServiceConfig `mapstructure:"presidio_service"`
 	AnalyzerConfig        AnalyzerConfig        `mapstructure:"analyzer"`
@@ -31,8 +35,8 @@ type PresidioRedactionProcessorConfig struct {
 }
 
 type PresidioServiceConfig struct {
-	AnalyzerEndpoint   string   `mapstructure:"analyzer_endpoint" default:"grpc://localhost:50051"`
-	AnonymizerEndpoint string   `mapstructure:"anonymizer_endpoint" default:"grpc://localhost:50052"`
+	AnalyzerEndpoint   string   `mapstructure:"analyzer_endpoint"`
+	AnonymizerEndpoint string   `mapstructure:"anonymizer_endpoint"`
 	ConcurrencyLimit   int      `mapstructure:"concurrency_limit,omitempty"`
 	TraceConditions    []string `mapstructure:"process_trace_if,omitempty"`
 	LogConditions      []string `mapstructure:"process_log_if,omitempty"`
