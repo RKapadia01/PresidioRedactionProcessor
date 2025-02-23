@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/RKapadia01/PresidioRedactionProcessor/internal/presidioclient"
+	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient"
 	"go.uber.org/zap"
 )
 
