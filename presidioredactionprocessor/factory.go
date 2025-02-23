@@ -3,7 +3,7 @@
 
 //go:generate mdatagen metadata.yaml
 
-package presidioredactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
+package presidioredactionprocessor
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
-		createDefaultConfig,
+		presidioclient.CreateDefaultConfig,
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
@@ -48,12 +48,9 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*presidioclient.PresidioRedactionProcessorConfig)
 
-	//TODO: Fix this
-	// if err := oCfg.validate(); err != nil {
-	// 	return nil, err
-	// }
-
-	configurePresidioEndpoints(oCfg)
+	if err := oCfg.Validate(); err != nil {
+		return nil, err
+	}
 
 	presidioRedaction := traces.NewPresidioTraceRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
@@ -74,12 +71,9 @@ func createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*presidioclient.PresidioRedactionProcessorConfig)
 
-	// TODO: Fix this
-	// if err := oCfg.validate(); err != nil {
-	// 	return nil, err
-	// }
-
-	configurePresidioEndpoints(oCfg)
+	if err := oCfg.Validate(); err != nil {
+		return nil, err
+	}
 
 	presidioRedaction := logs.NewPresidioLogRedaction(ctx, oCfg, set.TelemetrySettings, set.Logger)
 
@@ -90,11 +84,4 @@ func createLogsProcessor(
 		next,
 		presidioRedaction.ProcessLogs,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
-}
-
-func configurePresidioEndpoints(cfg *presidioclient.PresidioRedactionProcessorConfig) {
-	if cfg.PresidioRunMode == "embedded" {
-		cfg.PresidioServiceConfig.AnalyzerEndpoint = "grpc://localhost:50051"
-		cfg.PresidioServiceConfig.AnonymizerEndpoint = "grpc://localhost:500052"
-	}
 }
