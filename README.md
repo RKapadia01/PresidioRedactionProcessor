@@ -27,7 +27,7 @@ Deploy the Collector with Presidio, and then deploy separate Presidio Containers
 
 | Pros | Cons |
 | ---- | ---- |
-| The Presidio containers being deployed are maintained and updated regularly by the Open Source maintainers of Presidio      | As the containers are pre-built, there is limited flexibiltiy for adding/altering custom recognizers      |
+| The Presidio containers being deployed are maintained and updated regularly by the Open Source maintainers of Presidio      | As the containers are pre-built, there is limited flexibility for adding/altering custom recognizers      |
 || Depending on your environment, communicating with the Presidio Containers via HTTP can add significant overhead|
 
 **Option 2: Embedded Mode**
@@ -40,7 +40,7 @@ This code repository contains an implementation of Presidio with a grpc wrapper 
 
 | Pros | Cons |
 | ---- | ---- |
-|No requirement for external HTTP calls to other containers|As this relies on a custom implementation of Presidio, there is are no maintenance guarantees. The implementation of Presidio is provided as-is, and must be maintained by yourself.|
+|No requirement for external HTTP calls to other containers|As this relies on a custom implementation of Presidio, there are no maintenance guarantees. The implementation of Presidio is provided as-is, and must be maintained by yourself.|
 |PII Data doesn't leave the OpenTelemetry Collector container||
 |The custom implementation of Presidio allows you to add additional recognizers to suit your PII detection requirements.||
 
@@ -67,8 +67,8 @@ processors:
           hash_type: "sha256"
    # Utilizes OTTL (OpenTelemetry Transformation Language) to set flags
    # It is recommended to set these flags and pass in attributes indicating
-   # which logs/traces you beleive contains PII. This will avoid adding
-   # uneccessary overhead to the Otel Pipeline
+   # which logs/traces you believe contains PII. This will avoid adding
+   # unneccessary overhead to the Otel Pipeline
    process_trace_if:
     - 'attributes["contains_pii"] == true'
    process_log_if:
@@ -88,7 +88,7 @@ Add the gomod reference to your builder-config:
 
 <u>**Deploying a pre-built collector with the Presidio Redaction Processor:**</u>
 
-This repository contains a set of `Dockerfiles` which provide pre-built and pre-configured OpenTelemtry Collectors that contain the Presidio Redaction Processor.
+This repository contains a set of `Dockerfiles` which provide pre-built and pre-configured OpenTelemetry Collectors that contain the Presidio Redaction Processor.
 
 Firstly, please refer to the [Architectural Overview](#architectural-overview) to understand the deployment options (embedded vs. external).
 
