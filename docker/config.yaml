@@ -9,11 +9,10 @@ receivers:
 processors:
   # Refer to schema.yaml for configuration options
   presidio_redaction:
-    # mode: "embedded"
-    # error_mode: "propagate"
     presidio_service:
-      analyzer_endpoint: "http://presidio-analyzer:3001"
-      anonymizer_endpoint: "http://presidio-anonymizer:3002"
+      analyzer_endpoint: http://host.docker.internal:5002/analyze
+      anonymizer_endpoint: http://host.docker.internal:5001/anonymize
+      concurrency_limit: 1
     analyzer:
       language: "en"
       score_threshold: 0.5
