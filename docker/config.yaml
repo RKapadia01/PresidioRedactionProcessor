@@ -9,6 +9,8 @@ receivers:
 processors:
   # Refer to schema.yaml for configuration options
   presidio_redaction:
+    mode: "embedded"
+    error_mode: "ignore"
     presidio_service:
       analyzer_endpoint: http://host.docker.internal:5002/analyze
       anonymizer_endpoint: http://host.docker.internal:5001/anonymize
