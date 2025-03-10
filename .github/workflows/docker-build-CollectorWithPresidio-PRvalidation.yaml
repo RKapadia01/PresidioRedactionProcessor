@@ -12,6 +12,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Use local module
+        run: |
+          # Add a replaces section to the builder-config.yaml
+          echo "" >> docker/builder-config.yaml
+          cat >> docker/builder-config.yaml <<EOF
+          replaces:
+            - github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor => ../presidioredactionprocessor
+          EOF
+
+          cat docker/builder-config.yaml
+
       # Build the Docker image
       - name: Build the Docker image
         uses: docker/build-push-action@v3
@@ -19,6 +30,6 @@ jobs:
           # Path to the directory containing your Dockerfile
           context: .
           # Specify the path to your Dockerfile relative to the repository root
-          file: docker/CollectorWithPresidio.local.Dockerfile
+          file: docker/CollectorWithPresidio.Dockerfile
           platforms: linux/amd64
           push: false # set to false if you only want to build without pushing

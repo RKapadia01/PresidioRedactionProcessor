@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/presidioclient"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 

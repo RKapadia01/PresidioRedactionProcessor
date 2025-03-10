@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/presidioclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

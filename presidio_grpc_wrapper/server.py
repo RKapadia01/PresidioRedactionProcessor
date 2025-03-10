@@ -13,6 +13,11 @@ from presidio_anonymizer.entities import OperatorConfig
 analyzer = AnalyzerEngine()
 anonymizer = AnonymizerEngine()
 
+analyzer_registry = analyzer.registry
+
+# Add a custom recognizer to the registry:
+# analyzer_registry.add_recognizer(CustomRecognizer())
+
 class Server(presidio_pb2_grpc.PresidioRedactionProcessorServicer):
     def Analyze(self, request, context):
         recognizer_results = analyzer.analyze(

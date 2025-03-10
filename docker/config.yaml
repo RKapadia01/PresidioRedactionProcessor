@@ -9,12 +9,9 @@ receivers:
 processors:
   # Refer to schema.yaml for configuration options
   presidio_redaction:
-    mode: "embedded"
-    error_mode: "propagate"
     presidio_service:
-      # If you use external Presidio services (mode = "external"), you must specify the presidio endpoints here
-      # analyzer_endpoint: http://host.docker.internal:5002/analyze
-      # anonymizer_endpoint: http://host.docker.internal:5001/anonymize
+      analyzer_endpoint: http://host.docker.internal:5002/analyze
+      anonymizer_endpoint: http://host.docker.internal:5001/anonymize
       concurrency_limit: 1
     analyzer:
       language: "en"
@@ -24,11 +21,6 @@ processors:
         - entity: "default"
           type: "HASH"
           hash_type: "sha256"
-#    process_trace_if:
-# - 'resource.attributes["service.name"] == "python-tracing-sample" and attributes["contains_pii"] == true'
-#    process_log_if:
-# - 'resource.attributes["service.name"] == "python-tracing-sample" and severity_text == "INFO"'
-
 exporters:
   debug:
     verbosity: detailed

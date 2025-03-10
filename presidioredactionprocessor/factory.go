@@ -13,10 +13,10 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
-	"github.com/RKapadia01/presidioredactionprocessor/internal/logs"
-	"github.com/RKapadia01/presidioredactionprocessor/internal/metadata"
-	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient"
-	"github.com/RKapadia01/presidioredactionprocessor/internal/traces"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/logs"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/metadata"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/presidioclient"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/traces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
