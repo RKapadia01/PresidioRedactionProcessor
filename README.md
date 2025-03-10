@@ -98,7 +98,21 @@ docker run --rm -d -p 5002:3000 mcr.microsoft.com/presidio-analyzer:latest
 docker run --rm -d -p 5001:3000 mcr.microsoft.com/presidio-anonymizer:latest
 ```
 
-# Performance Benchmarks
+## Adding Custom Recognizers:
+In order to identify additional types of PII that are not supported by Presidio out of the box, you need to develop and add a custom recognizer. Please refer to Presidio's documentation for information on how to customize the Presidio Analyzer: https://microsoft.github.io/presidio/samples/python/customizing_presidio_analyzer/
+
+The Presidio Redaction Processor supports custom recognizers when running in "embedded mode" (Refer to [Architectural Overview](#architectural-overview) for more info). Once a custom recognizer has been developed, open the [server.py](./presidio_grpc_wrapper/server.py) file, and add the recognizer to the registry:
+
+```python
+analyzer_registry.add_recognizer(CustomRecognizer())
+```
+
+Rebuild the Dockerfile to incorporate the new recognizer into your Otel Collector:
+```bash
+docker build . -f CollectorWithPresidio.Dockerfile
+```
+
+## Performance Benchmarks
 Performance testing on the Presidio Processor has revealed minimal latency impact in both External and Embedded modes.
 
 ### Collector -> HTTP \* 2 -> Presidio
