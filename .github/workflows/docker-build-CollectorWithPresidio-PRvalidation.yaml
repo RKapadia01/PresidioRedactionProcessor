@@ -14,13 +14,13 @@ jobs:
 
       - name: Use local module
         run: |
-        # Add a replaces section to the builder-config.yaml
-        cat >> docker/builder-config.yaml <<EOF
-        replaces:
-          - github.com/RKapadia01/presidioredactionprocessor/presidioredactionprocessor => ./presidioredactionprocessorz
-        EOF
+          # Add a replaces section to the builder-config.yaml
+          cat >> docker/builder-config.yaml <<EOF
+          replaces:
+            - github.com/RKapadia01/presidioredactionprocessor/presidioredactionprocessor => ./presidioredactionprocessorz
+          EOF
 
-        cat docker/builder-config.yaml
+          cat docker/builder-config.yaml
 
       # Build the Docker image
       - name: Build the Docker image
