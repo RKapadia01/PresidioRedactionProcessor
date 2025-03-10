@@ -3,7 +3,7 @@
 [![Docker Image](https://github.com/RKapadia01/PresidioRedactionProcessor/actions/workflows/docker-build-CollectorOnly.yaml/badge.svg?branch=main)](https://github.com/RKapadia01/PresidioRedactionProcessor/actions/workflows/docker-build-CollectorOnly.yaml)
 [![Docker Image With Presidio](https://github.com/RKapadia01/PresidioRedactionProcessor/actions/workflows/docker-build-CollectorWithPresidio.yaml/badge.svg?branch=main)](https://github.com/RKapadia01/PresidioRedactionProcessor/actions/workflows/docker-build-CollectorWithPresidio.yaml)
 
-The Presidio Redaction Processor is an OpenTelemetry processor designed to analyze and eliminate Personally Identifiable Information (PII) from OpenTelemetry Logs & Traces.
+The Presidio Redaction Processor is an OpenTelemetry processor designed to analyze and eliminate Personally Identifiable Information (PII) from OpenTelemetry Logs & Traces. Utilization of this Processor requires some knowledge of [Presidio](https://microsoft.github.io/presidio/), and [OpenTelemetry](https://opentelemetry.io/)
 
 ## Architectural Overview:
 The Presidio Redaction processor relies on the capabilities built into [Microsoft Presidio](https://microsoft.github.io/presidio/), an open source tool for identification and anonymization of PII data in text.
@@ -67,6 +67,8 @@ processors:
    process_log_if:
     - 'resource.attributes["service.name"] == "sample-service" and severity_text == "INFO"'
 ```
+
+[OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
 
 ## Deploying the Processor into your environment:
 The Presidio Processor is intended to be run inside an [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/).
