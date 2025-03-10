@@ -5,6 +5,13 @@
 
 The Presidio Redaction Processor is an OpenTelemetry processor designed to analyze and eliminate Personally Identifiable Information (PII) from OpenTelemetry Logs & Traces. Utilization of this Processor requires some knowledge of [Presidio](https://microsoft.github.io/presidio/), and [OpenTelemetry](https://opentelemetry.io/)
 
+
+1. [Architectural Overview](#architectural-overview) (Read this first)
+2. [Processor Configuration](#processor-configuration)
+3. [Deployment](#deploying-the-processor-into-your-environment)
+4. [Adding custom recognizers](#adding-custom-recognizers)
+5. [Performance Benchmarks](#performance-benchmarks)
+
 ## Architectural Overview:
 The Presidio Redaction processor relies on the capabilities built into [Microsoft Presidio](https://microsoft.github.io/presidio/), an open source tool for identification and anonymization of PII data in text.
 
