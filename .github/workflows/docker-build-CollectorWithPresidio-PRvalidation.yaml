@@ -12,6 +12,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Debug directory structure
+        run: |
+          # List directory structure to see where your files are
+          find . -type d -name "presidioredactionprocessor" | sort
+          find . -name "go.mod" | sort
+
       - name: Use local module
         run: |
           # Add a replaces section to the builder-config.yaml
