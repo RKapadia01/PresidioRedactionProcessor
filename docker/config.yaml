@@ -1,0 +1,35 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Refer to schema.yaml for configuration options
+  presidio_redaction:
+    mode: "embedded"
+    error_mode: "propagate"
+    analyzer:
+      language: "en"
+      score_threshold: 0.5
+    anonymizer:
+      anonymizers:
+        - entity: "default"
+          type: "HASH"
+          hash_type: "sha256"
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [presidio_redaction]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [presidio_redaction]
+      exporters: [debug]
