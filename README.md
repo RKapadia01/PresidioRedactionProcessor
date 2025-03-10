@@ -45,7 +45,7 @@ This code repository contains an implementation of Presidio with a grpc wrapper 
 |The custom implementation of Presidio allows you to add additional recognizers to suit your PII detection requirements.||
 
 ## Processor Configuration
-Please refer to the [schema.yaml](./schema.yaml) for all configuration options.
+Please refer to the [schema.yaml](./schema.yaml) or the [config.go](./presidioredactionprocessor/internal/presidioclient/config.go) for all configuration options.
 
 **Example configuration:**
 ```yaml
@@ -84,7 +84,7 @@ The Presidio Processor is intended to be run inside an [OpenTelemetry Collector]
 
 Add the gomod reference to your builder-config:
 - `- gomod: github.com/RKapadia01/presidioredactionprocessor/presidioredactionprocessor v0.1.0`
-- Populate the `config.yaml` with the relevant configuration. Refer to the [schema.yaml](./schema.yaml) for all configuration options
+- Populate the `config.yaml` with the relevant configuration. Refer to the [schema.yaml](./schema.yaml) or the [config.go](./presidioredactionprocessor/internal/presidioclient/config.go) for all configuration options
 
 <u>**Deploying a pre-built collector with the Presidio Redaction Processor:**</u>
 
@@ -92,12 +92,12 @@ This repository contains a set of `Dockerfiles` which provide pre-built and pre-
 
 Firstly, please refer to the [Architectural Overview](#architectural-overview) to understand the deployment options (embedded vs. external).
 
-<u>If running presidio in embedded mode, from the root of the repository, build the Dockerfile:</u>
+**If running presidio in embedded mode, from the root of the repository, build the Dockerfile:**
 ```bash
 docker build . -f CollectorWithPresidio.Dockerfile
 ```
 
-<u>If running presidio in external mode:</u>
+**If running presidio in external mode:**
 ```bash
 docker build . -f CollectorOnly.Dockerfile
 ```

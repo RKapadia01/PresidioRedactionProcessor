@@ -6,24 +6,44 @@ properties:
       presidio_redaction:
         type: object
         properties:
+          mode:
+            type: string
+            enum: [embedded, external]
+            description: "Presidio run mode: 'embedded' for in-process operation or 'external' for using remote services."
+          error_mode:
+            type: string
+            enum: [ignore, propagate, silent]
+            description: |
+              Error handling mode:
+              - 'ignore': Ignore errors and continue processing.
+              - 'propagate': Stop processing and propagate the error up the pipeline.
+              - 'silent': Log errors and continue processing.
           presidio_service:
             type: object
             properties:
               analyzer_endpoint:
                 type: string
                 description: |
-                  URL of the Presidio Analyzer service, responsible for detecting PII entities.
-                  http(s) will use HTTP, and grpc will use gRPC.
+                  URL of the Presidio Analyzer service, responsible for detecting PII entities
               anonymizer_endpoint:
                 type: string
                 description: |
                   URL of the Presidio Anonymizer service, responsible for transforming detected PII.
-                  http(s) will use HTTP, and grpc will use gRPC.
               concurrency_limit:
                 type: integer
                 description: |
                   Maximum number of concurrent requests to the analyzer and anonymizer.
                   Default is 1. Increase cautiously based on system performance and stability.
+              process_trace_if:
+                type: array
+                items:
+                  type: string
+                description: "Conditions that determine when to process the traces. Written in OTTL (OpenTelemetry Transformation Language)"
+              process_log_if:
+                type: array
+                items:
+                  type: string
+                description: "Conditions that determine when to process the logs. Written in OTTL (OpenTelemetry Transformation Language)"
           analyzer:
             type: object
             properties:
@@ -36,7 +56,9 @@ properties:
                   Confidence score threshold to consider an entity as PII.
                   Entities with scores below this value will be ignored. Range: 0.0–1.0.
               entities:
-                type: string
+                type: array
+                items:
+                  type: string
                 description: |
                   List of entities to detect. Use "DEFAULT" to detect all supported entities.
                   Full list of Supported Entities: https://microsoft.github.io/presidio/supported_entities/
@@ -81,9 +103,7 @@ properties:
                       type: string
                       description: Replacement value (required for REPLACE type).
                     chars_to_mask:
-                      type: array
-                      items:
-                        type: integer
+                      type: integer
                       description: |
                         (For MASK type) List of character positions to mask in the detected entity.
                         Example: [0, 3] masks the 1st and 4th characters.
@@ -118,28 +138,32 @@ properties:
                     - properties:
                         type:
                           const: HASH
-                        hash_algorithm:
+                        hash_type:
                           type: string
+                          enum: [sha256, sha512, md5]
                           description: Hash algorithm for HASH type.
-                      required: [hash_algorithm]
+                      required: [hash_type]
                     - properties:
                         type:
                           const: MASK
                         chars_to_mask:
-                          type: array
-                          items:
-                            type: integer
+                          type: integer
+                          minimum: 1
                           description: Positions of characters to mask.
                         masking_char:
                           type: string
+                          default: "*"
                           description: Character used for masking.
                       required: [chars_to_mask]
                     - properties:
                         type:
                           const: ENCRYPT
-                        encryption_key:
+                        key:
                           type: string
                           description: Encryption key for ENCRYPT type.
-                      required: [encryption_key]
+                      required: [key]
+                    - properties:
+                        type:
+                          const: REDACT
 required:
   - processors
