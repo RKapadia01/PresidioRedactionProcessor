@@ -12,18 +12,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Debug directory structure
-        run: |
-          # List directory structure to see where your files are
-          find . -type d -name "presidioredactionprocessor" | sort
-          find . -name "go.mod" | sort
-
       - name: Use local module
         run: |
           # Add a replaces section to the builder-config.yaml
           cat >> docker/builder-config.yaml <<EOF
           replaces:
-            - github.com/RKapadia01/presidioredactionprocessor/presidioredactionprocessor => ./presidioredactionprocessor
+            - github.com/RKapadia01/presidioredactionprocessor/presidioredactionprocessor => .
           EOF
 
           cat docker/builder-config.yaml
