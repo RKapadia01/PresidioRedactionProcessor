@@ -3,105 +3,103 @@
 [![Docker Image](https://github.com/RKapadia01/PresidioRedactionProcessor/actions/workflows/docker-build-CollectorOnly.yaml/badge.svg?branch=main)](https://github.com/RKapadia01/PresidioRedactionProcessor/actions/workflows/docker-build-CollectorOnly.yaml)
 [![Docker Image With Presidio](https://github.com/RKapadia01/PresidioRedactionProcessor/actions/workflows/docker-build-CollectorWithPresidio.yaml/badge.svg?branch=main)](https://github.com/RKapadia01/PresidioRedactionProcessor/actions/workflows/docker-build-CollectorWithPresidio.yaml)
 
-## Quick Start
+The Presidio Redaction Processor is an OpenTelemetry processor designed to analyze and eliminate Personally Identifiable Information (PII) from OpenTelemetry Logs & Traces.
 
-If you are using the pre-built containers, there are two versions available:
+## Architectural Overview:
+The Presidio Redaction processor relies on the capabilities built into [Microsoft Presidio](https://microsoft.github.io/presidio/), an open source tool for identification and anonymization of PII data in text.
 
-- `rohankapadia/presidioredactioncollector:latest` - This is the latest version of the Processor, without Presidio.
-- `rohankapadia/presidioredactioncollector:withpresidio` - This is the latest version of the Processor, with Presidio.
+The Processor has been built with flexibility in mind, and hence there are 2 deployment options when using this processor.
 
-### Using a Presidio-ready Image
+**Option 1: External Mode**
 
-To quickly test out the processor, you can run the container that has Presidio baked-in. In this
-mode, the default configuration will point to the Presidio service running in the container.
-The communication between the Processor and Presidio is done via gRPC.
+Deploy the Collector with Presidio, and then deploy separate Presidio Containers into your environment. When running this configuration, the Processor will communicate with the Presidio containers via HTTP to analyze and anonymize instances of PII in your logs & traces.
 
-```bash
-docker run --rm -d \
-    -p 4318:4318 -p 4317:4317 \
-    rohankapadia/presidioredactioncollector:withpresidio
+![alt text](diagrams/image-1.png)
+
+<u>Pros/Cons of this approach:</u>
+
+| Pros | Cons |
+| ---- | ---- |
+| The Presidio containers being deployed are maintained and updated regularly by the Open Source maintainers of Presidio      | As the containers are pre-built, there is limited flexibiltiy for adding/altering custom recognizers      |
+|| Depending on your environment, communicating with the Presidio Containers via HTTP can add significant overhead|
+
+**Option 2: Embedded Mode**
+
+This code repository contains an implementation of Presidio with a grpc wrapper around it. This allows you to deploy a working instance of Presidio inside the OpenTelemetry Collector, eliminating the need to deploy additional Presidio Containers and make additional HTTP Calls.
+
+![alt text](diagrams/image-2.png)
+
+<u>Pros/Cons of this approach:</u>
+
+| Pros | Cons |
+| ---- | ---- |
+|No requirement for external HTTP calls to other containers|As this relies on a custom implementation of Presidio, there is are no maintenance guarantees. The implementation of Presidio is provided as-is, and must be maintained by yourself.|
+|PII Data doesn't leave the OpenTelemetry Collector container||
+|The custom implementation of Presidio allows you to add additional recognizers to suit your PII detection requirements.||
+
+## Processor Configuration
+Please refer to the [schema.yaml](./schema.yaml) for all configuration options.
+
+**Example configuration:**
+```yaml
+processors:
+  presidio_redaction:
+    # Specifies whether Presidio is deployed externally to the collector or internally.
+    # Refer to the architecture section of this README for more info.
+    mode: "embedded"
+    # Sets the behaviour of the processor if it encounters an error
+    error_mode: "propagate"
+    analyzer:
+      language: "en"
+      score_threshold: 0.5
+    anonymizer:
+    # Defines how PII gets anonymized when detected
+      anonymizers:
+        - entity: "default"
+          type: "HASH"
+          hash_type: "sha256"
+   # Utilizes OTTL (OpenTelemetry Transformation Language) to set flags
+   # It is recommended to set these flags and pass in attributes indicating
+   # which logs/traces you beleive contains PII. This will avoid adding
+   # uneccessary overhead to the Otel Pipeline
+   process_trace_if:
+    - 'attributes["contains_pii"] == true'
+   process_log_if:
+    - 'resource.attributes["service.name"] == "sample-service" and severity_text == "INFO"'
 ```
 
-And then you can send the telemetry to port 4317/4318. To look at the telemetry ingested, you
-can directly look into the logs of the container.
+## Deploying the Processor into your environment:
+The Presidio Processor is intended to be run inside an [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/).
 
-### Deploy your own Presidio Service
+<u>**If you already have a custom OpenTelemetry Collector deployed into your environment:**</u>
 
-It is also possible to deploy your own Presidio service and connect it to the Processor.
-In this mode, you need to provide your own configuration file, and the communication between
-the Processor and Presidio is done via HTTP.
+Add the gomod reference to your builder-config:
+- `- gomod: github.com/RKapadia01/presidioredactionprocessor/presidioredactionprocessor v0.1.0`
+- Populate the `config.yaml` with the relevant configuration. Refer to the [schema.yaml](./schema.yaml) for all configuration options
 
-To do this in Docker, you can run the following commands:
+<u>**Deploying a pre-built collector with the Presidio Redaction Processor:**</u>
 
+This repository contains a set of `Dockerfiles` which provide pre-built and pre-configured OpenTelemtry Collectors that contain the Presidio Redaction Processor.
+
+Firstly, please refer to the [Architectural Overview](#architectural-overview) to understand the deployment options (embedded vs. external).
+
+<u>If running presidio in embedded mode, from the root of the repository, build the Dockerfile:</u>
+```bash
+docker build . -f CollectorWithPresidio.Dockerfile
+```
+
+<u>If running presidio in external mode:</u>
+```bash
+docker build . -f CollectorOnly.Dockerfile
+```
+then, pull and run the Presidio Services from MCR:
 ```bash
 docker run --rm -d -p 5002:3000 mcr.microsoft.com/presidio-analyzer:latest
 docker run --rm -d -p 5001:3000 mcr.microsoft.com/presidio-anonymizer:latest
 ```
 
-Then you need to edit the configuration file to point to the correct Presidio service. You can do this
-by editing the `docker/config.yaml` file:
-
-```yaml
-    analyzer_endpoint: http://host.docker.internal:5002/analyze
-    anonymizer_endpoint: http://host.docker.internal:5001/anonymize
-```
-
-Finally, you can run the Processor container:
-
-```bash
-docker run --rm -d \
-    -p 4318:4318 -p 4317:4317 \
-    -v $(pwd)/docker/config.yaml:/app/config.yaml \
-    rohankapadia/presidioredactioncollector:latest
-```
-
-
-## Build the Docker containers:
-
-If for some reason you would like to build the Docker containers with the Collector yourself,
-you can do so by running the following commands:
-
-- Build based on local codebase:
-    - Collector Only: `docker build -f ./docker/CollectorOnly.local.Dockerfile .`
-    - Collector with Presidio: `docker build -f ./docker/CollectorWithPresidio.local.Dockerfile .`
-- Build based on published codebase:
-    - Collector Only: `docker build -f ./docker/CollectorOnly.Dockerfile .`
-    - Collector with Presidio: `docker build -f ./docker/CollectorWithPresidio.Dockerfile .`
-
-
-## Compile the proto file
-
-If you are making changes to the interface between the Processor and Presidio Wrapper, you would need
-to re-compile the gRPC definition to generate the latest interface definition.
-
-You would need the following dependencies:
-
-- Prerequisites for gRPC - Golang: https://grpc.io/docs/languages/go/quickstart/
-- Prerequisites for gRPC - Python: https://grpc.io/docs/languages/python/quickstart/
-
-Then you can run the following script to generate the Protocol buffer files:
-
-```bash
-# Generate Golang Files
-protoc \
-    --go_out=./presidioredactionprocessor --go_opt=paths=source_relative \
-    --go-grpc_out=./presidioredactionprocessor --go-grpc_opt=paths=source_relative \
-    ./presidio.proto
-
-# Generate Python Files
-python -m grpc_tools.protoc \
-    --proto_path=. \
-    --python_out=./presidio_grpc_wrapper \
-    --pyi_out=./presidio_grpc_wrapper \
-    --grpc_python_out=./presidio_grpc_wrapper \
-    ./presidio.proto
-```
-
-## Benchmarks
-
-```
-loadtest -c 2 -n 1000 -t 10 -P '{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"my-example-service"}}]},"scopeSpans":[{"scope":{"name":"example-instrumentation-scope","version":"1.0.0"},"spans":[{"traceId":"0123456789abcdef0123456789abcdef","spanId":"0123456789abcdef","name":"my-span-name","kind":"SPAN_KIND_INTERNAL","startTimeUnixNano":"1674457900000000000","endTimeUnixNano":"1674458000000000000","status":{"code":"STATUS_CODE_OK"},"attributes":[{"key":"user.name","value":{"stringValue":"Jacob Zhou"}},{"key":"user.email","value":{"stringValue":"jacob.zhou@example.com"}}]}]}]}]}' -T 'application/json' -m POST http://localhost:4318/v1/traces
-```
+# Performance Benchmarks
+Performance testing on the Presidio Processor has revealed minimal latency impact in both External and Embedded modes.
 
 ### Collector -> HTTP * 2 -> Presidio
 
@@ -124,29 +122,6 @@ Percentage of requests served within a certain time
   95%      337 ms
   99%      352 ms
  100%      354 ms (longest request)
-```
-
-### Collector -> gRPC * 2 -> Presidio
-
-```
-Target URL:          http://localhost:4318/v1/traces
-Max requests:        1000
-Concurrent clients:  32
-Running on cores:    16
-Agent:               none
-
-Completed requests:  1000
-Total errors:        0
-Total time:          8.56 s
-Mean latency:        268.8 ms
-Effective rps:       117
-
-Percentage of requests served within a certain time
-  50%      269 ms
-  90%      301 ms
-  95%      308 ms
-  99%      326 ms
- 100%      347 ms (longest request)
 ```
 
 ### Collector -> gRPC -> Presidio
