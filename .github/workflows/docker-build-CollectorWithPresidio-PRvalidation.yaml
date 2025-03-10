@@ -17,7 +17,7 @@ jobs:
           # Add a replaces section to the builder-config.yaml
           cat >> docker/builder-config.yaml <<EOF
           replaces:
-            - github.com/RKapadia01/presidioredactionprocessor/presidioredactionprocessor => ./presidioredactionprocessorz
+            - github.com/RKapadia01/presidioredactionprocessor/presidioredactionprocessor => ./presidioredactionprocessor
           EOF
 
           cat docker/builder-config.yaml
