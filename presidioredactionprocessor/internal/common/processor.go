@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient"
-	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient/grpcclient"
-	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient/httpclient"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/presidioclient"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/presidioclient/grpcclient"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/presidioclient/httpclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"

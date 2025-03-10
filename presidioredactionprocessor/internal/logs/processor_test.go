@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/RKapadia01/presidioredactionprocessor/internal/common"
-	"github.com/RKapadia01/presidioredactionprocessor/internal/presidioclient"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/common"
+	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/presidioclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
