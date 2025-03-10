@@ -15,6 +15,7 @@ jobs:
       - name: Use local module
         run: |
           # Add a replaces section to the builder-config.yaml
+          echo "" >> docker/builder-config.yaml
           cat >> docker/builder-config.yaml <<EOF
           replaces:
             - github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor => ../presidioredactionprocessor
