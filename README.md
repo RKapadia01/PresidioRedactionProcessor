@@ -101,7 +101,7 @@ docker run --rm -d -p 5001:3000 mcr.microsoft.com/presidio-anonymizer:latest
 # Performance Benchmarks
 Performance testing on the Presidio Processor has revealed minimal latency impact in both External and Embedded modes.
 
-### Collector -> HTTP * 2 -> Presidio
+### Collector -> HTTP \* 2 -> Presidio
 
 ```
 Target URL:          http://localhost:4318/v1/traces
