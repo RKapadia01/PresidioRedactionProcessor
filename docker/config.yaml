@@ -9,20 +9,27 @@ receivers:
 processors:
   # Refer to schema.yaml for configuration options
   presidio_redaction:
+<<<<<<< Updated upstream
     mode: "embedded"
-    error_mode: "ignore"
-    presidio_service:
-      analyzer_endpoint: http://host.docker.internal:5002/analyze
-      anonymizer_endpoint: http://host.docker.internal:5001/anonymize
-      concurrency_limit: 1
+    error_mode: "propagate"
+=======
+    run_mode: "embedded"
+>>>>>>> Stashed changes
     analyzer:
       language: "en"
       score_threshold: 0.5
     anonymizer:
       anonymizers:
+<<<<<<< Updated upstream
+        - entity: "DEFAULT"
+          type: "REPLACE"
+          new_value: "REDACTED"
+=======
         - entity: "default"
-          type: "HASH"
-          hash_type: "sha256"
+          type: "REPLACE"
+          new_value: "REDACTED"
+
+>>>>>>> Stashed changes
 exporters:
   debug:
     verbosity: detailed

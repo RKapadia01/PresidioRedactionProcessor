@@ -27,7 +27,7 @@ func CreateDefaultConfig() component.Config {
 }
 
 type PresidioRedactionProcessorConfig struct {
-	PresidioRunMode       string                `mapstructure:"mode,omitempty"`
+	PresidioRunMode       string                `mapstructure:"mode"`
 	ErrorMode             ottl.ErrorMode        `mapstructure:"error_mode"`
 	PresidioServiceConfig PresidioServiceConfig `mapstructure:"presidio_service"`
 	AnalyzerConfig        AnalyzerConfig        `mapstructure:"analyzer"`
