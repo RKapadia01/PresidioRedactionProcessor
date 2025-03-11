@@ -17,7 +17,6 @@ import (
 	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/metadata"
 	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/presidioclient"
 	"github.com/RKapadia01/PresidioRedactionProcessor/presidioredactionprocessor/internal/traces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func NewFactory() processor.Factory {
@@ -27,17 +26,6 @@ func NewFactory() processor.Factory {
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
-}
-
-func createDefaultConfig() component.Config {
-	return &presidioclient.PresidioRedactionProcessorConfig{
-		PresidioRunMode: "embedded",
-		ErrorMode:       ottl.PropagateError,
-		PresidioServiceConfig: presidioclient.PresidioServiceConfig{
-			AnalyzerEndpoint:   "grpc://localhost:50051",
-			AnonymizerEndpoint: "grpc://localhost:50052",
-		},
-	}
 }
 
 func createTracesProcessor(

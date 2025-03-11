@@ -10,19 +10,15 @@ processors:
   # Refer to schema.yaml for configuration options
   presidio_redaction:
     mode: "embedded"
-    error_mode: "ignore"
-    presidio_service:
-      analyzer_endpoint: http://host.docker.internal:5002/analyze
-      anonymizer_endpoint: http://host.docker.internal:5001/anonymize
-      concurrency_limit: 1
+    error_mode: "propagate"
     analyzer:
       language: "en"
       score_threshold: 0.5
     anonymizer:
       anonymizers:
-        - entity: "default"
-          type: "HASH"
-          hash_type: "sha256"
+        - entity: "DEFAULT"
+          type: "REPLACE"
+          new_value: "REDACTED"
 exporters:
   debug:
     verbosity: detailed
