@@ -16,7 +16,7 @@ ENV GOARCH=amd64
 
 RUN ./ocb --verbose --config builder-config.yaml
 
-FROM condaforge/mambaforge
+FROM continuumio/miniconda3:latest
 WORKDIR /app
 
 COPY ./presidio_grpc_wrapper/requirements.txt /app
