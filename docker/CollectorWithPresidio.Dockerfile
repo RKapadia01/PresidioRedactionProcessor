@@ -16,17 +16,20 @@ ENV GOARCH=amd64
 
 RUN ./ocb --verbose --config builder-config.yaml
 
-FROM continuumio/miniconda3:latest
+FROM continuumio/miniconda3:latest AS final
 WORKDIR /app
 
 COPY ./presidio_grpc_wrapper/requirements.txt /app
 
-RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
-
-RUN conda install -c conda-forge spacy && \
-  python -m spacy download en_core_web_lg && \
-  pip install "presidio_analyzer[transformers]" && \
-  pip install -r requirements.txt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends netcat-traditional && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    conda install -c conda-forge spacy && \
+    python -m spacy download en_core_web_lg && \
+    pip install --no-cache-dir "presidio_analyzer[transformers]" && \
+    pip install --no-cache-dir -r requirements.txt && \
+    conda clean -afy
 
 COPY --from=builder /app/_build/otelcol-presidio ./otel-collector
 COPY ./docker/config.yaml .
