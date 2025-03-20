@@ -16,7 +16,7 @@ ENV GOARCH=amd64
 
 RUN ./ocb --verbose --config builder-config.yaml
 
-FROM continuumio/miniconda3:latest AS final
+FROM python:3.9-slim AS final
 WORKDIR /app
 
 COPY ./presidio_grpc_wrapper/requirements.txt /app
@@ -25,11 +25,13 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends netcat-traditional && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    conda install -c conda-forge spacy && \
+    # Install pip packages all at once and clean cache
+    pip install --no-cache-dir "presidio_analyzer[transformers]" \
+                             spacy \
+                             -r requirements.txt && \
     python -m spacy download en_core_web_lg && \
-    pip install --no-cache-dir "presidio_analyzer[transformers]" && \
-    pip install --no-cache-dir -r requirements.txt && \
-    conda clean -afy
+    # Remove pip cache
+    rm -rf /root/.cache/pip
 
 COPY --from=builder /app/_build/otelcol-presidio ./otel-collector
 COPY ./docker/config.yaml .
